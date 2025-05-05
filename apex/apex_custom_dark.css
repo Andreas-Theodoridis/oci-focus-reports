@@ -1,0 +1,492 @@
+/* General Color Variables */
+:root {
+    --soft-neon-blue: #66b3ff;
+    --soft-neon-green: #66cc66;
+    --soft-neon-pink: #ff66ff;
+    --soft-neon-yellow: #ffcc66;
+    --blue-green-combo-1: #66b3ff;
+    --blue-green-combo-2: #99e699;
+    --off-white-1: #f5f5f5;
+    --darkest-gray-1: #424242;
+    /* Modify the color palette to use neon colors */
+    /* Primary Neon Colors */
+  --u-color-1: #33d6b2; /* Soft Cyan */
+  --u-color-2: #cc66cc; /* Soft Pink */
+  --u-color-3: #33cc99; /* Soft Green */
+  --u-color-4: #e6b800; /* Mellow Yellow */
+  --u-color-5: #66bfe6; /* Soft Blue */
+  --u-color-6: #cc6699; /* Soft Magenta */
+  --u-color-7: #cc334d; /* Soft Red */
+  --u-color-8: #e67300; /* Soft Orange */
+  --u-color-9: #cc334d; /* Soft Red (error) */
+  --u-color-10: #cc66aa; /* Soft Highlight Pink */
+  --u-color-11: #e68a00; /* Muted Yellow-Orange */
+  --u-color-12: #7a4dcc; /* Muted Purple */
+  --u-color-13: #cc6699; /* Soft Hot Pink */
+  --u-color-14: #99e699; /* Soft Light Green */
+  --u-color-15: #99ccee; /* Soft Blue */
+  --u-color-16: #66e0cc; /* Muted Teal */
+  --u-color-17: #e699cc; /* Soft Light Pink */
+  --u-color-18: #66cc99; /* Muted Lime Green */
+  --u-color-19: #cc6699; /* Soft Fuchsia */
+  --u-color-20: #66e6e6; /* Soft Aqua */
+  --u-color-21: #e67340; /* Soft Tangerine */
+  --u-color-22: #7a66cc; /* Soft Violet */
+  --u-color-23: #b3e673; /* Muted Lime */
+  --u-color-24: #e64d80; /* Soft Raspberry */
+  --u-color-25: #e66a88; /* Soft Strawberry */
+  --u-color-26: #e67333; /* Soft Sunset */
+  --u-color-27: #66cc99; /* Muted Bright Green */
+  --u-color-28: #66bfe6; /* Muted Ice Blue */
+  --u-color-29: #bb99ee; /* Soft Lavender */
+  --u-color-30: #eeaaf0; /* Soft Lilac */
+  --u-color-31: #66cc88; /* Soft Apple Green */
+  --u-color-32: #e680a0; /* Soft Pinkish Red */
+  --u-color-33: #e6a84d; /* Soft Golden Yellow */
+  --u-color-34: #8cb3d9; /* Soft Periwinkle */
+  --u-color-35: #d98cbd; /* Soft Bright Pink */
+  --u-color-36: #33d6b2; /* Soft Cyan */
+  --u-color-37: #66ccee; /* Soft Ocean Blue */
+  --u-color-38: #e68080; /* Soft Coral Red */
+  --u-color-39: #66e6e6; /* Soft Bright Aqua */
+  --u-color-40: #e699cc; /* Soft Rose */
+  --u-color-41: #cc334d; /* Soft Red */
+  --u-color-42: #8cb3ff; /* Soft Sky Blue */
+  --u-color-43: #b266e6; /* Soft Purple Pink */
+  --u-color-44: #e6a600; /* Soft Gold */
+  --u-color-45: #7a5ce6; /* Muted Electric Purple */
+  --rw-palette-orange-100: #e67300;
+  --oj-private-timeline-item-duration-event-overflow-bg-color: #424242;
+}
+
+.a-Button {
+    color: var(--off-white-1);
+}
+
+.a-Button--hot, .a-CardView-button--hot, .apex-button-group input:checked+label, .t-Button--hot, .t-Form-fieldContainer--radioButtonGroup .apex-item-group--rc input:checked+label, .ui-button--hot {
+    --a-button-background-color: #757575;
+    --a-button-text-color: var(--rw-palette-neutral-0);
+    --a-button-hover-background-color: #0572ce;
+    --a-button-hover-text-color: var(--a-button-text-color);
+    --a-button-hover-border-color: var(--a-button-hover-background-color);
+    --a-button-active-background-color: var(--rw-palette-neutral-150);
+    --a-button-active-text-color: var(--a-button-hover-text-color);
+    --a-button-active-border-color: var(--a-button-active-background-color);
+    --a-button-focus-background-color: var(--a-button-hover-background-color);
+    --a-button-focus-text-color: var(--a-button-hover-text-color);
+    --a-button-focus-border-color: var(--a-button-focus-background-color);
+}
+
+.a-Button--noUI, .t-Button--hideShow, .t-Button--noUI, .t-Button--simple, .ui-button:not(.ui-button--hot):not(.ui-button--danger) {
+    --a-button-text-color: var(--off-white-1);
+    --a-button-hover-background-color: #0572ce;
+    --a-button-active-background-color: var(--off-white-1);
+}
+
+.a-CardView {
+    background-color: #757575;
+    color: var(--off-white-1);
+}
+
+.a-CardView-badge {
+    background-color: #424242;
+    color: var(--off-white-1);
+    font-size: 16px;
+}
+
+.a-CardView-subTitle {
+    color: var(--off-white-1);
+}
+
+.a-ComboSelect-item {
+    color: var(--off-white-1);
+}
+
+.a-ComboSelect-item.is-selected {
+    color: var(--off-white-1);
+    background-color: var(--blue-green-combo-1);
+}
+
+.a-ComboSelect-item.is-selected .a-ComboSelect-action {
+    --a-checkbox-background-color: #0572ce;
+    --a-checkbox-checked-text-color: #fff;
+}
+
+.a-DatePicker-calendar {
+    background-color: #616161;
+}
+
+.a-DatePicker-calendar td > span {
+    background-color: #616161;
+    color: var(--off-white-1);
+}
+
+.a-DatePicker-calendar td.is-current > span {
+    background-color: #549818;
+    color: #424242;
+}
+
+.a-DatePicker-calendar td.is-selected > span {
+    background-color: #0288d1;
+    color: var(--off-white-1);
+    --a-datepicker-calendar-day-background-color: #66b3ff; 
+}
+
+.a-DatePicker-monthPicker .a-DatePicker-month select, .a-DatePicker-monthPicker .a-DatePicker-year select {
+    color: var(--off-white-1);
+}
+
+.a-GV-footer {
+    background-color: #424242;
+}
+
+.a-GV-pageRange {
+    color: var(--off-white-1);
+}
+
+.a-GV-row.is-hover, .a-IRR-table tr:hover td {
+    background-color: #0572ce;
+}
+
+.a-GV-row.is-inserted .a-GV-cell {
+        background-color: #0572ce;
+    --a-gv-background-color: #0572ce;
+}
+
+.a-GV-row.is-updated .a-GV-cell {
+    background-color: #0572ce;
+    --a-gv-background-color: #0572ce;
+}
+
+
+.a-GV-status {
+    color: #f5f5f5
+}
+
+.a-GV-table td, .a-GV-table th {
+    background-color: #424242;
+    border-color: #757575;
+}
+
+.a-GV-table th.a-GV-header, .a-GV-table th.a-GV-headerGroup {
+    background-color: #757575;
+    color: #f5f5f5;
+    border-color: #424242;
+}
+
+.a-IG {
+    background-color: #424242;
+    border-block-end-style: none;
+    border-style: none;
+    color: var(--off-white-1);
+}
+
+.a-IG-controls, .a-IRR-controls {
+    background-color: #424242;
+    color: var(--off-white-1);
+}
+
+.a-IG-controls-cell--label button.a-IG-controlsLabel, .a-IG-controls-cell--label button.a-IRR-controlsLabel, .a-IRR-controls-cell--label button.a-IG-controlsLabel, .a-IRR-controls-cell--label button.a-IRR-controlsLabel {
+    cursor: pointer;
+    color: var(--off-white-1);
+    border-style: none;
+}
+
+.a-IG-controls-item {
+    color: var(--off-white-1);
+}
+
+.a-IG-controls-item--controlBreak, .a-IG-reportSummary-item--controlBreak, .a-IRR-controls-item--controlBreak, .a-IRR-reportSummary-item--controlBreak {
+    background-color: var(--u-color-8);
+}
+
+.a-IG-controls-item--filter, .a-IG-reportSummary-item--filter, .a-IRR-controls-item--filter, .a-IRR-reportSummary-item--filter {
+    background-color: #549818;
+}
+
+.a-IG-controls-item--highlight, .a-IG-reportSummary-item--highlight, .a-IRR-controls-item--highlight, .a-IRR-reportSummary-item--highlight {
+    background-color: var(--soft-neon-blue);
+}
+
+.a-IG-controls-item--pivot, .a-IG-reportSummary-item--pivot, .a-IRR-controls-item--pivot, .a-IRR-reportSummary-item--pivot {
+    /*background-color: var(--blue-green-combo-1);*/
+    background-color: #0572ce;
+}
+
+.a-IG-controls-item--savedReport, .a-IG-controls-item--search, .a-IG-reportSummary-item--savedReport, .a-IG-reportSummary-item--search, .a-IRR-controls-item--savedReport, .a-IRR-controls-item--search, .a-IRR-reportSummary-item--savedReport, .a-IRR-reportSummary-item--search {
+    background-color: var(--soft-neon-blue);
+    color: var(--off-white-1);
+}
+
+.a-IG-controlsCheckbox:checked+.a-IG-controlsCheckboxLabel, .a-IRR-controlsCheckbox:checked+.a-IRR-controlsCheckboxLabel, .u-selector.is-selected {
+    --a-checkbox-background-color: #616161;
+    --a-checkbox-text-color: var(--a-checkbox-checked-text-color);
+}
+
+.a-IG-header {
+    color: var(--off-white-1);
+    background-color: #424242;
+}
+
+.a-IG-reportSummary-count, .a-IRR-reportSummary-count {
+    color: var(--off-white-1);
+}
+
+.a-IG-reportSummary-value, .a-IRR-reportSummary-value {
+    color: var(--off-white-1);
+}
+
+.a-Icon {
+    color: var(--off-white-1);
+}
+
+.a-IRR-aggregate {
+    background-color: #757575;
+}
+
+.a-IRR, .a-IRR-container {
+    background-color: #424242;
+    border-block-end-style: none;
+    color: var(--off-white-1);
+}
+
+.a-IRR-container, .a-IRR, .a-IRR-toolbar {
+    background-color: #424242;
+    border-block-end-style: none;
+    color: var(--off-white-1);
+}
+
+.a-IRR-dialog--download .a-IconList-item.is-selected {
+    background-color: #0572ce;
+}
+
+.a-IRR-dialogRow--header .a-IRR-dialogCol {
+    color: var(--off-white-1);
+}
+
+.a-IRR-dialogListContainer .u-Form-label {
+    background-color: #0572ce;
+}
+
+.a-IRR-header {
+    color: var(--off-white-1);
+    /*border-color: var(--a-gv-header-cell-border-color);*/
+    border-color: #424242;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #757575;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+}
+
+.a-IRR-header.a-IRR-header--null {
+    background-color: #757575 !important;
+    border-style: none;
+}
+
+.a-IRR-header.a-IRR-header--null:hover {
+    background-color: #757575 !important;
+    border-style: none;
+}
+
+.a-IRR-header--pivotColumn, .a-IRR-header--pivotRow {
+    background-color: #757575;
+    /*border-color: var(--a-gv-header-cell-border-color);*/
+    border-color: #424242;
+    border-style: solid;
+    border-width: 1px;
+    /*border-top-left-radius: 5px;
+    border-top-right-radius: 5px;*/
+}
+
+.a-IRR-header.is-active, .a-IRR-header:hover {
+    color: var(--off-white-1);
+    /*border-color: var(--a-gv-header-cell-border-color);*/
+    border-color: #424242;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #0572ce;
+}
+
+.a-IRR-search-field {
+    background-color: #757575;
+    color: var(--off-white-1);
+}
+
+.a-IRR-sortWidget-actions {
+    background-color: #424242;
+    color: var(--off-white-1);
+}
+
+.a-IRR-sortWidget-search {
+    background-color: #424242;
+    color: var(--off-white-1);
+}
+
+.a-IRR-sortWidget-search > .a-IRR-sortWidget-searchField {
+    background-color: #424242;
+    color: var(--off-white-1);
+}
+
+.a-IRR-table td {
+    background-color: #424242;
+    border-color: #757575;
+    /*border-color: var(--a-gv-header-cell-border-color);*/
+    border-style: solid;
+    border-width: 1px;
+}
+
+.a-Menu-content {
+    background-color: #616161;
+    color: var(--off-white-1);
+}
+
+.a-Menu-item {
+    color: var(--off-white-1);
+}
+
+.a-Menu-item.is-expanded {
+    color: var(--u-color-16);
+}
+
+.a-Menu-item.is-focused {
+    color: var(--u-color-16);
+}
+
+a-select .apex-item-comboselect--separated .a-Chips--wrap .a-Chip {
+    background-color: #616161;
+}
+
+.a-Toolbar-inputText {
+    background-color: #757575;
+    color: var(--off-white-1);
+}
+
+.apex-item-autocomplete-readonly, .apex-item-color-picker-readonly, .apex-item-combobox, .apex-item-combobox-readonly, .apex-item-datepicker-readonly, .apex-item-group-readonly, .apex-item-multi, .apex-item-number-readonly, .apex-item-popup-lov-readonly, .apex-item-select, .apex-item-select-one-many-readonly, .apex-item-select-readonly, .apex-item-text, .apex-item-text-readonly, .apex-item-textarea, .apex-item-textarea-readonly, .apex-item-wrapper--combobox-many .apex-item-comboselect, .apex-item-wrapper--select-many .apex-item-comboselect, .apex-item-wrapper.is-readonly .js-accessible-readonly, .datetimepicker_newMonth, .u-TF-item--select, .u-TF-item--text, select.group_selectlist, select.listmanager {
+    background-color: #616161;
+    color: var(--off-white-1);
+    border-style: none;
+}
+
+.apex-item-datepicker {
+    background-color: #616161;
+    color: var(--off-white-1);
+}
+
+.apex-item-datepicker {
+    height: auto;
+    color: var(--off-white-1);
+}
+
+.apex-item-icon {
+    color: var(--off-white-1)
+}
+
+input[type="radio" i] {
+    background-color: #757575;
+    color: var(--off-white-1);
+}
+
+select {
+    background-color: #757575;
+    color: var(--off-white-1);
+}
+
+.t-Body-contentInner {
+    background-color: #424242;
+    border-style: none;
+    /*padding-block-start: unset;*/
+}
+
+.t-Body-mainContent {
+    background-color: #424242;
+    border-style: none;
+}
+
+.t-Body-title {
+    background-color: #302d2a;
+}
+
+.t-Dialog-body {
+    background-color: #424242;
+    border-style: none;
+}
+
+.t-Footer {
+    background-color: #424242;
+    color: var(--off-white-1);
+    border-style: none;
+}
+
+.t-Form-label {
+    color: var(--off-white-1);
+}
+
+.t-Region {
+    background-color: #424242;
+    border-block-end-style: none;
+}
+
+.t-Region-header {
+    background-color: #424242;
+    border-block-end-style: none;
+    border-color: #e0e0e0;
+    border-style: none;
+    color: var(--off-white-1);
+}
+
+.t-Button--success {
+    --a-button-background-color: var(--soft-neon-green);
+    --a-button-text-color: #424242;
+    --a-button-hover-background-color: var(--blue-green-combo-2);
+    --a-button-hover-text-color: var(--a-button-text-color);
+    --a-button-hover-border-color: var(--a-button-hover-background-color);
+    --a-button-active-background-color: var(--blue-green-combo-2);
+    --a-button-active-text-color: var(--a-button-hover-text-color);
+    --a-button-active-border-color: var(--a-button-active-background-color);
+    --a-button-focus-background-color: var(--a-button-hover-background-color);
+    --a-button-focus-text-color: var(--a-button-hover-text-color);
+    --a-button-focus-border-color: var(--a-button-focus-background-color);
+}
+
+.u-Form--stretchInputs .apex-item-select, .u-Form--stretchInputs .apex-item-text, .u-Form--stretchInputs .apex-item-textarea, .u-Form--stretchInputs .u-Form-inputContainer input:not([type=checkbox]):not([type=radio]), .u-Form--stretchInputs .u-Form-inputContainer select, .u-Form--stretchInputs .u-Form-inputContainer textarea, .u-Form-stretchInputs .apex-item-select, .u-Form-stretchInputs .apex-item-text, .u-Form-stretchInputs .apex-item-textarea, .u-Form-stretchInputs .u-Form-inputContainer input:not([type=checkbox]):not([type=radio]), .u-Form-stretchInputs .u-Form-inputContainer select, .u-Form-stretchInputs .u-Form-inputContainer textarea {
+    background-color: #757575;
+    color: var(--off-white-1);
+}
+
+.u-selector {
+    --a-checkbox-background-color: transparent;
+    --a-checkbox-hover-background-color: #0572ce;
+    --a-checkbox-hover-opacity: .4;
+    --a-checkbox-checked-text-color: #fff;
+    --a-checkbox-border-color: #fff;
+}
+
+.ui-dialog {
+    background-color: #616161;
+    color: var(--off-white-1);
+}
+
+.ui-dialog .ui-dialog-title {
+    color: var(--off-white-1);
+}
+
+.ui-dialog .ui-dialog-titlebar {
+    background-color: #757575;
+}
+
+.ui-dialog-datepicker .a-DatePicker-footer {
+    background-color: #616161;
+}
+
+.ui-dialog-datepicker .a-DatePicker-header {
+    background-color: #616161;
+}
+
+.a-Button.is-active, .a-Button.ui-state-active, .a-Button:active, .a-Button:active:focus, .a-CardView-button.is-active, .a-CardView-button.ui-state-active, .a-CardView-button:active, .a-CardView-button:active:focus, .apex-button-group label.is-active, .apex-button-group label.ui-state-active, .apex-button-group label:active, .apex-button-group label:active:focus, .t-Button.is-active, .t-Button.ui-state-active, .t-Button:active, .t-Button:active:focus, .t-Form-fieldContainer--radioButtonGroup .apex-item-group--rc input+label.is-active, .t-Form-fieldContainer--radioButtonGroup .apex-item-group--rc input+label.ui-state-active, .t-Form-fieldContainer--radioButtonGroup .apex-item-group--rc input+label:active, .t-Form-fieldContainer--radioButtonGroup .apex-item-group--rc input+label:active:focus, .t-Form-helpButton.is-active, .t-Form-helpButton.ui-state-active, .t-Form-helpButton:active, .t-Form-helpButton:active:focus, .ui-button.is-active, .ui-button.ui-state-active, .ui-button:active, .ui-button:active:focus {
+    --a-button-state-background-color: #0572ce;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #f5f5f5
+}
