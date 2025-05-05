@@ -1,0 +1,49 @@
+{
+  "app_dir": "/home/opc/oci_extensions",
+  "regions": ["eu-frankfurt-1", "eu-amsterdam-1"],
+  "subscription_id": "9379274",
+  "days_back": 1,
+  "idika_comp_ocid": "ocid1.tenancy.oc1..aaaaaaaaqr55dbhrptqbdzghhochnmaarikn6h2chep53nugzd5tygphvemq",
+  "gsis_comp_ocid": "ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta", 
+  "reporting_namespace": "bling",
+  "reporting_bucket": "ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta",
+  "destination_path": "data/fc",
+  "prefix_file": "FOCUS Reports",
+  "use_dynamic_prefix": true,
+  "prefix_base": "FOCUS Reports",
+  "focus_reports_initial_file_name_pattern": "focus_reports_initial_load.log",
+  "focus_reports_file_name_pattern": "focus_reports_*.log",
+  "availability_reports_file_name_pattern": "availability_reports_*.log",
+  "oci_subscriptions_file_name_pattern": "oci_subscriptions_*.log",
+  "gsis_compartments_file_name_pattern": "gsis_compartments_*.log",
+  "idika_compartments_file_name_pattern": "idika_compartments_*.log",
+  "gsis_resources_file_name_pattern": "gsis_resources_*.log",
+  "idika_resources_file_name_pattern": "idika_resources_*.log",
+  "exa_maintenance_file_name_pattern": "exa_maintenance_reports_*.log",
+  "metric_groups": [
+    {
+      "namespace": "oci_lbaas",
+      "metrics": ["HttpResponses5xx", "UnHealthyBackendServers", "BackendTimeouts"],
+      "resource_display_key": ["resourceDisplayName", "lbName"],
+      "output_file": "lbaas_50d.csv"
+    },
+    {
+      "namespace": "oci_compute_infrastructure_health",
+      "metrics": ["instance_status"],
+      "resource_display_key": ["resourceDisplayName"],
+      "output_file": "compute_50d.csv"
+    },
+    {
+      "namespace": "oci_database_cluster",
+      "metrics": ["NodeStatus"],
+      "resource_display_key": ["resourceName"],
+      "output_file": "database_50d.csv"
+    },
+    {
+      "namespace": "oci_vpn",
+      "metrics": ["TunnelState"],
+      "resource_display_key": ["resourceName"],
+      "output_file": "vpn_50d.csv"
+    }
+  ]
+}

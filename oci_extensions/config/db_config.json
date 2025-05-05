@@ -1,0 +1,24 @@
+{
+  "db_user": "${db_user}",
+  "db_password": "${db_password}",
+  "db_dsn": "${db_tnsname}",  
+  "availability_metrics_table": "OCI_AVAILABILITY_METRICS_PY",
+  "compartments_table": "OCI_COMPARTMENTS_PY",
+  "focus_reports_table": "FOCUS_REPORTS_PY",
+  "oci_subscriptions_table": "OCI_SUBSCRIPTIONS_PY",
+  "resources_table": "OCI_RESOURCES_PY",
+  "exa_maintenance_metrics_table": "OCI_EXA_MAINTENANCE_PY",
+  "wallet_dir": "/home/opc/oci_extensions/wallet",
+  "use_test_credentials": false,
+  "oracle_client_lib_dir": "/usr/lib/oracle/23/client64/lib",
+  "test_credentials": {
+    "user": "${db_user}",
+    "password": "${db_password}",
+    "dsn": "${db_tnsname}"
+  },
+  "db_credentials": {
+    "pass_secret_ocid": "${db_pass_secret_ocid}",
+    "user": "${db_user}",
+    "dsn": "${db_tnsname}"
+  }
+}
