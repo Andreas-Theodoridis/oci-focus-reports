@@ -1,7 +1,7 @@
 {
   "db_user": "OCI_FOCUS_REPORTS",
   "db_password": "",
-  "db_dsn": "${db_tnsname}",  
+  "db_dsn": "change_dsn",  
   "availability_metrics_table": "OCI_AVAILABILITY_METRICS_PY",
   "compartments_table": "OCI_COMPARTMENTS_PY",
   "focus_reports_table": "FOCUS_REPORTS_PY",
@@ -14,19 +14,19 @@
   "test_credentials": {
     "user": "OCI_FOCUS_REPORTS",
     "password": "",
-    "dsn": "${db_tnsname}"
+    "dsn": "change_dsn"
   },
   "db_credentials": {
-    "pass_secret_ocid": "${db_pass_secret_ocid}",
+    "pass_secret_ocid": "",
     "user": "OCI_FOCUS_REPORTS",
-    "dsn": "${db_tnsname}"
+    "dsn": "change_dsn"
   },
   "app_dir": "/home/opc/oci-focus-reports",
-  "regions": ["${home_region}", "${compute_region}", "${other_regions}"],
+  "regions": ["change_region"],
   "days_back": 1,
-  "comp_ocid": "${tenancy_ocid}", 
+  "comp_ocid": "change_comp", 
   "reporting_namespace": "bling",
-  "reporting_bucket": "${tenancy_ocid}",
+  "reporting_bucket": "change_comp",
   "destination_path": "data/fc",
   "prefix_file": "FOCUS Reports",
   "use_dynamic_prefix": true,
