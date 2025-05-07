@@ -27,8 +27,8 @@ def load_config(name):
 config   = load_config("metrics_config.json")
 dbconfig = load_config("db_config.json")
 
-compartment_ocid = config["gsis_comp_ocid"]
-log_file_pattern= config["gsis_compartments_file_name_pattern"]
+compartment_ocid = config["comp_ocid"]
+log_file_pattern= config["compartments_file_name_pattern"]
 
 compartments_table = dbconfig["compartments_table"]
 db_user = dbconfig["db_user"]
@@ -42,8 +42,8 @@ oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
 
 # Create timestamped log filename
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_filename = os.path.join(log_dir, f"gsis_compartments_{timestamp}.log")
-latest_log_symlink = os.path.join(log_dir, "latest_gsis_compartments.log")
+log_filename = os.path.join(log_dir, f"compartments_{timestamp}.log")
+latest_log_symlink = os.path.join(log_dir, "latest_compartments.log")
 # Zip all previous .log files (except current one)
 for filename in os.listdir(log_dir):
     if fnmatch.fnmatch(filename, log_file_pattern) and filename != os.path.basename(log_filename):
@@ -65,7 +65,7 @@ for filename in os.listdir(log_dir):
 # Update 'latest.log' symlink
 if os.path.exists(latest_log_symlink) or os.path.islink(latest_log_symlink):
     os.remove(latest_log_symlink)
-os.symlink(f"gsis_compartments_{timestamp}.log", latest_log_symlink)
+os.symlink(f"compartments_{timestamp}.log", latest_log_symlink)
 
 # Setup logging
 logging.basicConfig(
@@ -245,7 +245,7 @@ def main():
         csv_data = convert_json_to_csv(compartment_data)
 
         # Write the CSV data locally to a file
-        output_path = os.path.join(output_dir, "compartments_gsis_data.csv")
+        output_path = os.path.join(output_dir, "compartments_data.csv")
         #file_path = "compartments_data.csv"
         write_csv_locally(csv_data, output_path)
 

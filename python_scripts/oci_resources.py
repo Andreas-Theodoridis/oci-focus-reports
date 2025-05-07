@@ -28,8 +28,8 @@ def load_config(name):
 config   = load_config("metrics_config.json")
 dbconfig = load_config("db_config.json")
 
-compartment_ocid = config["gsis_comp_ocid"]
-log_file_pattern = config["gsis_resources_file_name_pattern"]
+compartment_ocid = config["comp_ocid"]
+log_file_pattern = config["resources_file_name_pattern"]
 
 resources_table = dbconfig["resources_table"]
 db_user = dbconfig["db_user"]
@@ -43,8 +43,8 @@ oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
 
 # === Logging Setup ===
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_filename = os.path.join(log_dir, f"gsis_resources_{timestamp}.log")
-latest_log_symlink = os.path.join(log_dir, "latest_gsis_resources.log")
+log_filename = os.path.join(log_dir, f"resources_{timestamp}.log")
+latest_log_symlink = os.path.join(log_dir, "latest_resources.log")
 
 # Zip older log files
 for filename in os.listdir(log_dir):
@@ -117,13 +117,13 @@ def search_all_regions_and_save():
                 logging.warning(f"⚠️ Could not search in {region}: {e}")
 
         # === Save to JSON
-        json_file = os.path.join(output_dir, f"gsis_resources.json")
+        json_file = os.path.join(output_dir, f"resources.json")
         with open(json_file, "w", encoding='utf-8') as f:
             json.dump(all_results, f, indent=4)
         logging.info(f"📝 JSON written to {json_file}")
 
         # === Save to CSV
-        csv_file = os.path.join(output_dir, f"gsis_resources.csv")
+        csv_file = os.path.join(output_dir, f"resources.csv")
         if all_results:
             fieldnames = all_results[0].keys()
             with open(csv_file, "w", newline='', encoding='utf-8') as f:
