@@ -56,7 +56,7 @@ def main():
     defined here.
     """
     # Define the parent directory here
-    parent_directory = "/home/opc/oci_extensions/data/fc"  # Replace with the actual path
+    parent_directory = "/home/opc/oci-focus-reports/data/fc"  # Replace with the actual path
 
     # Define the age threshold in days here
     days_threshold = 2

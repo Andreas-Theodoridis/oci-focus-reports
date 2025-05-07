@@ -9,7 +9,7 @@ import oracledb
 import fnmatch
 from datetime import datetime, timedelta, timezone
 
-app_dir = "/home/opc/oci_extensions"
+app_dir = "/home/opc/oci-focus-reports"
 
 # Load config
 config_dir = os.path.join(app_dir, "config")

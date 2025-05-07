@@ -12,7 +12,7 @@ import gzip
 from datetime import datetime, timedelta, timezone
 from oci.pagination import list_call_get_all_results
 
-app_dir = "/home/opc/oci_extensions"
+app_dir = "/home/opc/oci-focus-reports"
 
 # Load config
 config_dir = os.path.join(app_dir, "config")

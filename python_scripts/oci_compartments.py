@@ -11,7 +11,7 @@ import shutil
 import gzip
 import logging
 
-app_dir    = "/home/opc/oci_extensions"
+app_dir    = "/home/opc/oci-focus-reports"
 config_dir = os.path.join(app_dir, "config")
 log_dir    = os.path.join(app_dir, "logs")
 output_dir = os.path.join(app_dir, "data", "compartments")

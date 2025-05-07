@@ -6,7 +6,7 @@ import oci
 import base64
 from datetime import datetime
 
-app_dir = "/home/opc/oci_extensions"
+app_dir = "/home/opc/oci-focus-reports"
 
 # Load config
 config_dir = os.path.join(app_dir, "config")

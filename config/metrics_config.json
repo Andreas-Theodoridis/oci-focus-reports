@@ -1,5 +1,5 @@
 {
-  "app_dir": "/home/opc/oci_extensions",
+  "app_dir": "/home/opc/oci-focus-reports",
   "regions": ["eu-frankfurt-1", "eu-amsterdam-1"],
   "subscription_id": "9379274",
   "days_back": 1,
