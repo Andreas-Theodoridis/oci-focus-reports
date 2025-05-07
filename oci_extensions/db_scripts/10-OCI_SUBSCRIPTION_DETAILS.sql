@@ -1,0 +1,15 @@
+CREATE TABLE USAGE.OCI_SUBSCRIPTION_DETAILS 
+    ( 
+     SUBSCRIPTION_ID       NUMBER , 
+     START_DATE            DATE , 
+     END_DATE              DATE , 
+     COMMITED_CREDITS      NUMBER , 
+     CREDITS_CONSUMED      VARCHAR2 (20) , 
+     CREDITS_CONSUMED_DATE DATE , 
+     ORDER_NAME            VARCHAR2 (128) , 
+     CURRENCY              VARCHAR2 (20) , 
+     ORDER_ID              NUMBER 
+    ) 
+    TABLESPACE DATA 
+    LOGGING 
+;
