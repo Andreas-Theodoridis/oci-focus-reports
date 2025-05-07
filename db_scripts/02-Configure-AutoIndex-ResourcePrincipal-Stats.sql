@@ -1,19 +1,19 @@
 EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
-EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','USAGE', TRUE);
+EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','OCI_FOCUS_REPORTS', TRUE);
 EXEC DBMS_CLOUD_ADMIN.DISABLE_RESOURCE_PRINCIPAL();
 EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL();
-EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL(username => 'USAGE');
+EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL(username => 'OCI_FOCUS_REPORTS');
 EXEC DBMS_CLOUD_ADMIN.DISABLE_RESOURCE_PRINCIPAL();
 EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL();
-EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL(username => 'USAGE');
+EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL(username => 'OCI_FOCUS_REPORTS');
 BEGIN
   -- Create the scheduler job.
   DBMS_SCHEDULER.CREATE_JOB (
-    job_name          => 'GATHER_USAGE_STATS',
+    job_name          => 'GATHER_OCI_FOCUS_REPORTS_STATS',
     job_type          => 'PLSQL_BLOCK',
     job_action        => 'BEGIN
                             DBMS_STATS.GATHER_SCHEMA_STATS(
-                              ownname             => ''USAGE'',
+                              ownname             => ''OCI_FOCUS_REPORTS'',
                               estimate_percent  => DBMS_STATS.AUTO_SAMPLE_SIZE,  -- Let Oracle determine sample size
                               method_opt          => ''FOR ALL COLUMNS SIZE AUTO'',    -- Gather histograms as needed
                               degree              => NULL,         -- Use the default degree of parallelism
@@ -25,16 +25,16 @@ BEGIN
     repeat_interval   => 'FREQ=DAILY;BYHOUR=01',  -- Can be DAILY, WEEKLY, MONTHLY, etc.  See DBMS_SCHEDULER documentation.
     end_date          => NULL,          -- No end date.  Change if needed.
     enabled           => TRUE,          -- The job is enabled and will run.
-    comments          => 'Gather statistics for the USAGEME schema.'
+    comments          => 'Gather statistics for the OCI_FOCUS_REPORTS schema.'
   );
 
   -- Optional:  Grant execute privilege on the job to another user.  Remove this if not needed.
   -- Replace 'OTHER_USER' with the username to grant privileges to.
   -- DBMS_SCHEDULER.GRANT_PRIVILEGE (
   --  privilege   => 'EXECUTE',
-  --  grantee     => 'USAGE',
+  --  grantee     => 'OCI_FOCUS_REPORTS',
   --  grantor     => 'ADMIN',  --  The owner of the job.  If created in another schema, change this.
-  --  object_name => 'GATHER_USAGE_STATS'
+  --  object_name => 'GATHER_OCI_FOCUS_REPORTS_STATS'
   --);
 
 
@@ -55,7 +55,7 @@ BEGIN
 
 
   COMMIT;
-  DBMS_OUTPUT.PUT_LINE('Scheduler job "GATHER_USAGE_STATS" created and enabled.');
+  DBMS_OUTPUT.PUT_LINE('Scheduler job "GATHER_OCI_FOCUS_REPORTS_STATS" created and enabled.');
 
 EXCEPTION
   WHEN OTHERS THEN

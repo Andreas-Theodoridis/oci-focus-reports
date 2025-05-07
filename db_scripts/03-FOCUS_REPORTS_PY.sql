@@ -1,5 +1,5 @@
 
-create table "USAGE"."FOCUS_REPORTS_PY" (
+create table "OCI_FOCUS_REPORTS"."FOCUS_REPORTS_PY" (
    "AVAILABILITYZONE"           varchar2(100) collate "USING_NLS_COMP",
    "BILLEDCOST"                 number,
    "BILLINGACCOUNTID"           number,

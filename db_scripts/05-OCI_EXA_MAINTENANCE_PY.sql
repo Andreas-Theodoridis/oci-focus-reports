@@ -1,4 +1,4 @@
-CREATE TABLE USAGE.OCI_EXA_MAINTENANCE_PY 
+CREATE TABLE OCI_FOCUS_REPORTS.OCI_EXA_MAINTENANCE_PY 
     ( 
      ID                                       VARCHAR2 (1000) , 
      COMPARTMENT_ID                           VARCHAR2 (1000) , 
