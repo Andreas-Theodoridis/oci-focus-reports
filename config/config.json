@@ -22,7 +22,7 @@
     "dsn": "change_dsn"
   },
   "app_dir": "/home/opc/oci-focus-reports",
-  "regions": ["change_region"],
+  "regions": [],
   "days_back": 1,
   "comp_ocid": "change_comp", 
   "reporting_namespace": "bling",
