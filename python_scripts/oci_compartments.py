@@ -196,18 +196,18 @@ def upload_csv_to_oracle(csv_data, db_user, db_pass, db_dsn):
                :7 AS "Parent", :8 AS "Path"
         FROM dual
     ) src
-    ON (tgt."Compartment_ID" = src."Compartment ID")
+    ON (tgt."COMPARTMENT_ID" = src."Compartment ID")
     WHEN MATCHED THEN UPDATE SET
-        tgt."Name" = src."Name",
-        tgt."Description" = src."Description",
-        tgt."Lifecycle_State" = src."Lifecycle State",
-        tgt."Time_Created" = src."Time Created",
-        tgt."Parent_ID" = src."Parent ID",
+        tgt."NAME" = src."Name",
+        tgt."DESCRIPTION" = src."Description",
+        tgt."LIFECYCLE_STATE" = src."Lifecycle State",
+        tgt."TIME_CREATED" = src."Time Created",
+        tgt."PARENT_ID" = src."Parent ID",
         tgt.PARENT = src."Parent",
-        tgt."Path" = src."Path"
+        tgt."PATH" = src."Path"
     WHEN NOT MATCHED THEN INSERT (
-        "Compartment_ID", "Name", "Description", "Lifecycle_State", "Time_Created",
-        "Parent_ID", PARENT, "Path"
+        "COMPARTMENT_ID", "NAME", "DESCRIPTION", "LIFECYCLE_STATE", "TIME_CREATED",
+        "PARENT_ID", PARENT, "PATH"
     )
     VALUES (
         src."Compartment ID", src."Name", src."Description", src."Lifecycle State",
