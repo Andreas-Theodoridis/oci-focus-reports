@@ -22,19 +22,18 @@ def load_config(name):
     with open(os.path.join(config_dir, name)) as f:
         return json.load(f)
 
-config   = load_config("metrics_config.json")
-dbconfig = load_config("db_config.json")
+config   = load_config("config.json")
 
 log_file_pattern = config["oci_subscriptions_file_name_pattern"]
-oci_subscriptions_table = dbconfig["oci_subscriptions_table"]
-db_user = dbconfig["db_user"]
-db_pass = dbconfig["db_password"]
-db_dsn = dbconfig["db_dsn"]
-wallet_path = dbconfig["wallet_dir"]
-use_test_creds = dbconfig.get("use_test_credentials", False)
+oci_subscriptions_table = config["oci_subscriptions_table"]
+db_user = config["db_user"]
+db_pass = config["db_password"]
+db_dsn = config["db_dsn"]
+wallet_path = config["wallet_dir"]
+use_test_creds = config.get("use_test_credentials", False)
 
 # Oracle Thick Client
-oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
+oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])
 
 # Logging
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -156,7 +155,7 @@ def upload_csv_to_oracle(csv_path, table_name=oci_subscriptions_table):
     try:
         conn = oracledb.connect(
             user=db_user,
-            password=get_secret_value(dbconfig["db_credentials"]["pass_secret_ocid"], signer),
+            password=get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer),
             dsn=db_dsn
         )
         cursor = conn.cursor()

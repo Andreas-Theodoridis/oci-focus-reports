@@ -19,18 +19,12 @@ with open(os.path.join(config_dir, f"metrics_config.json")) as f:
 regions = config["regions"]
 app_dir = config["app_dir"]
 log_file_pattern= config["exa_maintenance_file_name_pattern"]
-
-#Load DB Config
-dbconfig_dir = os.path.join(app_dir, "config")
-with open(os.path.join(dbconfig_dir, f"db_config.json")) as df:
-    dbconfig = json.load(df)
-
-exa_maintenance_metrics_table = dbconfig["exa_maintenance_metrics_table"]
-db_user = dbconfig["db_user"]
-db_pass = dbconfig["db_password"]
-db_dsn = dbconfig["db_dsn"]
-wallet_path = dbconfig["wallet_dir"]
-use_test_creds = dbconfig.get("use_test_credentials", False)
+exa_maintenance_metrics_table = config["exa_maintenance_metrics_table"]
+db_user = config["db_user"]
+db_pass = config["db_password"]
+db_dsn = config["db_dsn"]
+wallet_path = config["wallet_dir"]
+use_test_creds = config.get("use_test_credentials", False)
 
 # Logging setup
 LOG_DIR = os.path.join(app_dir, "logs")
@@ -70,7 +64,7 @@ logging.basicConfig(
 )
 
 # 💡 Initialize Oracle Thick Client
-oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
+oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])
 
 # Define output directory
 output_dir = os.path.join(app_dir, "data", "exa_maintenance")

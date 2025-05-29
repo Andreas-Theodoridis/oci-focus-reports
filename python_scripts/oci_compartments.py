@@ -24,21 +24,20 @@ def load_config(name):
     with open(os.path.join(config_dir, name)) as f:
         return json.load(f)
 
-config   = load_config("metrics_config.json")
-dbconfig = load_config("db_config.json")
+config   = load_config("config.json")
 
 compartment_ocid = config["comp_ocid"]
 log_file_pattern= config["compartments_file_name_pattern"]
 
-compartments_table = dbconfig["compartments_table"]
-db_user = dbconfig["db_user"]
-db_pass = dbconfig["db_password"]
-db_dsn = dbconfig["db_dsn"]
-wallet_path = dbconfig["wallet_dir"]
-use_test_creds = dbconfig.get("use_test_credentials", False)
+compartments_table = config["compartments_table"]
+db_user = config["db_user"]
+db_pass = config["db_password"]
+db_dsn = config["db_dsn"]
+wallet_path = config["wallet_dir"]
+use_test_creds = config.get("use_test_credentials", False)
 
 # 💡 Initialize Oracle Thick Client
-oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
+oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])
 
 # Create timestamped log filename
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -251,13 +250,13 @@ def main():
 
         # Upload to Oracle DB
         if use_test_creds:
-            db_user = dbconfig["test_credentials"]["user"]
-            db_pass = dbconfig["test_credentials"]["password"]
-            db_dsn = dbconfig["test_credentials"]["dsn"]
+            db_user = config["test_credentials"]["user"]
+            db_pass = config["test_credentials"]["password"]
+            db_dsn = config["test_credentials"]["dsn"]
         else:
-            db_user = dbconfig["db_credentials"]["user"]
-            db_pass = get_secret_value(dbconfig["db_credentials"]["pass_secret_ocid"], signer=oci.auth.signers.InstancePrincipalsSecurityTokenSigner())
-            db_dsn = dbconfig["db_credentials"]["dsn"]
+            db_user = config["db_credentials"]["user"]
+            db_pass = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer=oci.auth.signers.InstancePrincipalsSecurityTokenSigner())
+            db_dsn = config["db_credentials"]["dsn"]
 
         upload_csv_to_oracle(csv_data, db_user, db_pass, db_dsn)
 

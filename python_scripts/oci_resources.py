@@ -25,21 +25,20 @@ def load_config(name):
     with open(os.path.join(config_dir, name)) as f:
         return json.load(f)
 
-config   = load_config("metrics_config.json")
-dbconfig = load_config("db_config.json")
+config   = load_config("config.json")
 
 compartment_ocid = config["comp_ocid"]
 log_file_pattern = config["resources_file_name_pattern"]
 
-resources_table = dbconfig["resources_table"]
-db_user = dbconfig["db_user"]
-db_pass = dbconfig["db_password"]
-db_dsn = dbconfig["db_dsn"]
-wallet_path = dbconfig["wallet_dir"]
-use_test_creds = dbconfig.get("use_test_credentials", False)
+resources_table = config["resources_table"]
+db_user = config["db_user"]
+db_pass = config["db_password"]
+db_dsn = config["db_dsn"]
+wallet_path = config["wallet_dir"]
+use_test_creds = config.get("use_test_credentials", False)
 
 # 💡 Initialize Oracle Thick Client
-oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
+oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])
 
 # === Logging Setup ===
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -159,8 +158,8 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
     try:
         # Fetch secret dynamically from Vault if specified
         db_password = db_pass
-        if "pass_secret_ocid" in dbconfig.get("db_credentials", {}):
-            db_password = get_secret_value(dbconfig["db_credentials"]["pass_secret_ocid"], signer)
+        if "pass_secret_ocid" in config.get("db_credentials", {}):
+            db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
         
         os.environ['TNS_ADMIN'] = wallet_path
         conn = oracledb.connect(

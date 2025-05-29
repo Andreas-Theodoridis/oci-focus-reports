@@ -16,7 +16,7 @@ app_dir = "/home/opc/oci-focus-reports"
 
 # Load config
 config_dir = os.path.join(app_dir, "config")
-with open(os.path.join(config_dir, f"metrics_config.json")) as f:
+with open(os.path.join(config_dir, f"config.json")) as f:
     config = json.load(f)
 
 regions = config["regions"]
@@ -25,17 +25,12 @@ metric_groups = config["metric_groups"]
 app_dir = config["app_dir"]
 log_file_pattern= config["availability_reports_file_name_pattern"]
 
-#Load DB Config
-dbconfig_dir = os.path.join(app_dir, "config")
-with open(os.path.join(dbconfig_dir, f"db_config.json")) as df:
-    dbconfig = json.load(df)
-
-availability_metrics_table = dbconfig["availability_metrics_table"]
-db_user = dbconfig["db_user"]
-db_pass = dbconfig["db_password"]
-db_dsn = dbconfig["db_dsn"]
-wallet_path = dbconfig["wallet_dir"]
-use_test_creds = dbconfig.get("use_test_credentials", False)
+availability_metrics_table = config["availability_metrics_table"]
+db_user = config["db_user"]
+db_pass = config["db_password"]
+db_dsn = config["db_dsn"]
+wallet_path = config["wallet_dir"]
+use_test_creds = config.get("use_test_credentials", False)
 
 # Logging setup
 LOG_DIR = os.path.join(app_dir, "logs")
@@ -75,7 +70,7 @@ logging.basicConfig(
 )
 
 # 💡 Initialize Oracle Thick Client
-oracledb.init_oracle_client(lib_dir=dbconfig["oracle_client_lib_dir"])
+oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])
 
 # Define output directory
 output_dir = os.path.join(app_dir, "data", "availability")
@@ -223,14 +218,14 @@ def upload_csv_to_oracle(csv_file, db_user, db_pass, db_dsn):
 
 def main():
     if use_test_creds:
-        db_user = dbconfig["test_credentials"]["user"]
-        db_pass = dbconfig["test_credentials"]["password"]
-        db_dsn = dbconfig["test_credentials"]["dsn"]
+        db_user = config["test_credentials"]["user"]
+        db_pass = config["test_credentials"]["password"]
+        db_dsn = config["test_credentials"]["dsn"]
     else:
-        db_conf = dbconfig["db_credentials"]
-        db_user = dbconfig["db_credentials"]["user"]
+        db_conf = config["db_credentials"]
+        db_user = config["db_credentials"]["user"]
         db_pass = get_secret_value(db_conf["pass_secret_ocid"], signer)
-        db_dsn = dbconfig["db_credentials"]["dsn"]
+        db_dsn = config["db_credentials"]["dsn"]
 
     compartments = get_all_compartments()
 
