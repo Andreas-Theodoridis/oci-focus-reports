@@ -8587,7 +8587,7 @@ wwv_flow_imp_shared.create_authentication(
 ,p_scheme_type=>'NATIVE_SOCIAL'
 ,p_attribute_01=>wwv_flow_imp.id(15768127408796145)
 ,p_attribute_02=>'OPENID_CONNECT'
-,p_attribute_03=>'__IDCS_DISCOVERY_URL_'
+,p_attribute_03=>'__IDCS_DISCOVERY_URL__'
 ,p_attribute_07=>'profile,groups'
 ,p_attribute_09=>'sub'
 ,p_attribute_10=>'groups'
