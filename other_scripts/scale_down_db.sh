@@ -21,7 +21,7 @@ else
 fi
 
 echo "Scaling DOWN ADB OCID: $ADB_OCID to Compute Count: $COMPUTE_COUNT"
-LOG_PATH="./update_db_down.log"
+LOG_PATH="/home/opc/oci-focus-reports/logs/update_db_down.log"
 
 oci db autonomous-database update \
   --autonomous-database-id "$ADB_OCID" \
