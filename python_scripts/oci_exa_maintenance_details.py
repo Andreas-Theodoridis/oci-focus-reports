@@ -13,7 +13,7 @@ app_dir = "/home/opc/oci-focus-reports"
 
 # Load config
 config_dir = os.path.join(app_dir, "config")
-with open(os.path.join(config_dir, f"metrics_config.json")) as f:
+with open(os.path.join(config_dir, f"config.json")) as f:
     config = json.load(f)
 
 regions = config["regions"]

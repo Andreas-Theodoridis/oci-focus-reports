@@ -6601,7 +6601,7 @@ wwv_flow_imp_shared.create_security_scheme(
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select 1 from APEX_WORKSPACE_SESSION_GROUPS',
 'where apex_session_id = :app_session',
-'and group_name in (''CA_APEX_USERS'')'))
+'and group_name in (''focus-reports-apex-users'')'))
 ,p_error_message=>'Insufficient privileges, user is not a Contributor'
 ,p_version_scn=>44688930691508
 ,p_caching=>'BY_USER_BY_PAGE_VIEW'
@@ -6640,7 +6640,7 @@ wwv_flow_imp_shared.create_security_scheme(
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select 1 from APEX_WORKSPACE_SESSION_GROUPS',
 'where apex_session_id = :app_session',
-'and group_name in (''CA_APEX_ADMINS'')'))
+'and group_name in (''focus-reports-apex-admins'')'))
 ,p_error_message=>'Insufficient privileges, user is not an Administrator'
 ,p_version_scn=>44566164782241
 ,p_caching=>'BY_USER_BY_PAGE_VIEW'
@@ -15826,7 +15826,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -15860,7 +15860,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -15894,7 +15894,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -15928,7 +15928,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -15962,7 +15962,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -15996,7 +15996,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16030,7 +16030,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16064,7 +16064,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16098,7 +16098,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16132,7 +16132,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16166,7 +16166,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16200,7 +16200,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16234,7 +16234,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16268,7 +16268,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16302,7 +16302,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16336,7 +16336,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -16537,7 +16537,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16570,7 +16570,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16603,7 +16603,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16636,7 +16636,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16669,7 +16669,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16702,7 +16702,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16735,7 +16735,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16768,7 +16768,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16801,7 +16801,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16834,7 +16834,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16867,7 +16867,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16900,7 +16900,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16933,7 +16933,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16966,7 +16966,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16999,7 +16999,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -17032,7 +17032,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -19955,8 +19955,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P3_FROMDATE, ''DD-MON-YYYY'') OR :P3_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P3_TODATE, ''DD-MON-YYYY'') OR :P3_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE"',
-'order by "DATE" ASC;'))
+'group by TRUNC(CHARGEPERIODSTART,''DDD'')',
+'order by TRUNC(CHARGEPERIODSTART,''DDD'') ASC;'))
 ,p_series_name_column_name=>'Total'
 ,p_items_value_column_name=>'COST'
 ,p_items_label_column_name=>'DATE'
@@ -20042,8 +20042,8 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P3_RESOURCE_NAME, '',''))) or :P3_RESOURCE_NAME is null)',
 ' AND TRUNC(CHARGEPERIODEND, ''MM'') >= ADD_MONTHS(TRUNC(SYSDATE, ''MM''), -6)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "Month", "Category", "Description", "SKU"',
-'order by "Month" ASC;',
+'group by TRUNC(CHARGEPERIODSTART,''MM''), SERVICECATEGORY, CHARGEDESCRIPTION, SKUID',
+'order by TRUNC(CHARGEPERIODSTART,''MM'') ASC;',
 ''))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
@@ -20621,8 +20621,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P3_FROMDATE, ''DD-MON-YYYY'') OR :P3_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P3_TODATE, ''DD-MON-YYYY'') OR :P3_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE", SERVICECATEGORY',
-'order by "DATE" ASC;',
+'group by TRUNC(CHARGEPERIODSTART,''IW''), SERVICECATEGORY',
+'order by TRUNC(CHARGEPERIODSTART,''IW'') ASC;',
 ''))
 ,p_ajax_items_to_submit=>'P3_SUBSCRIPTION_ID'
 ,p_series_name_column_name=>'SERVICECATEGORY'
@@ -20807,8 +20807,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P3_FROMDATE, ''DD-MON-YYYY'') OR :P3_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P3_TODATE, ''DD-MON-YYYY'') OR :P3_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE", SERVICECATEGORY',
-'order by "DATE" ASC;',
+'group by TRUNC(CHARGEPERIODSTART,''MM''), SERVICECATEGORY',
+'order by TRUNC(CHARGEPERIODSTART,''MM'') ASC;',
 ''))
 ,p_ajax_items_to_submit=>'P3_SUBSCRIPTION_ID'
 ,p_series_name_column_name=>'SERVICECATEGORY'
@@ -20992,8 +20992,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P3_FROMDATE, ''DD-MON-YYYY'') OR :P3_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P3_TODATE, ''DD-MON-YYYY'') OR :P3_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE"',
-'order by "DATE" ASC;'))
+'group by TRUNC(CHARGEPERIODSTART,''IW'')',
+'order by TRUNC(CHARGEPERIODSTART,''IW'') ASC;'))
 ,p_series_name_column_name=>'Total'
 ,p_items_value_column_name=>'COST'
 ,p_items_label_column_name=>'DATE'
@@ -21179,8 +21179,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P3_FROMDATE, ''DD-MON-YYYY'') OR :P3_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P3_TODATE, ''DD-MON-YYYY'') OR :P3_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE"',
-'order by "DATE" ASC;'))
+'group by TRUNC(CHARGEPERIODSTART,''MM'')',
+'order by TRUNC(CHARGEPERIODSTART,''MM'') ASC;'))
 ,p_series_name_column_name=>'Total'
 ,p_items_value_column_name=>'COST'
 ,p_items_label_column_name=>'DATE'
@@ -21984,7 +21984,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_display_sequence=>130
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select TRUNC(CHARGEPERIODEND,''DD'') AS DAY,  ',
+'select TRUNC(CHARGEPERIODEND,''DD'') AS "Day",  ',
 'BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,  NVL(SERVICECATEGORY, ''Others'') AS SERVICECATEGORY, BILLEDCOST,',
 'RESOURCETYPE, SERVICENAME, SKUID, ',
 '    CASE WHEN CHARGEDESCRIPTION IS NULL AND SKUID=''B90304'' THEN ''Mobile Hub Standard'' ELSE CHARGEDESCRIPTION END AS CHARGEDESCRIPTION,',
@@ -22001,9 +22001,9 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P3_RESOURCE_NAME, '',''))) or :P3_RESOURCE_NAME is null)',
 ' AND (CHARGEPERIODSTART >= TO_TIMESTAMP(:P3_FROMDATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P3_FROMDATE is null)',
 ' AND (CHARGEPERIODEND <= TO_TIMESTAMP(:P3_TODATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P3_TODATE is null)',
-' group by DAY, BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY, BILLEDCOST,',
+' group by TRUNC(CHARGEPERIODEND,''DD''), BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY, BILLEDCOST,',
 'RESOURCETYPE, SERVICENAME, SKUID, CHARGEDESCRIPTION,  PRICINGUNIT, OCI_COMPARTMENTNAME, OCI_COMPARTMENTID',
-'order by DAY desc;'))
+'order by TRUNC(CHARGEPERIODEND,''DD'') desc;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P3_SUBSCRIPTION_ID'
 ,p_plug_display_condition_type=>'VALUE_OF_ITEM_IN_CONDITION_IN_COLON_DELIMITED_LIST'
@@ -22414,8 +22414,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P3_FROMDATE, ''DD-MON-YYYY'') OR :P3_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P3_TODATE, ''DD-MON-YYYY'') OR :P3_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE", SERVICECATEGORY',
-'order by "DATE" ASC;'))
+'group by TRUNC(CHARGEPERIODSTART,''DDD''), SERVICECATEGORY',
+'order by TRUNC(CHARGEPERIODSTART,''DDD'') ASC;'))
 ,p_ajax_items_to_submit=>'P3_SUBSCRIPTION_ID'
 ,p_series_name_column_name=>'SERVICECATEGORY'
 ,p_items_value_column_name=>'COST'
@@ -22509,9 +22509,9 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P3_RESOURCE_NAME, '',''))) or :P3_RESOURCE_NAME is null)',
 ' AND (NVL(CHARGEPERIODSTART, TRUNC(SYSDATE - 8,''DDD'')) >= NVL(TO_TIMESTAMP(:P3_FROMDATE, ''DD-MON-YYYY HH24:MI:SS''), TRUNC(SYSDATE - 8,''DDD'')))',
 ' AND (CHARGEPERIODEND <= TO_TIMESTAMP(:P3_TODATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P3_TODATE is null)',
-' group by "Day", BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY, BILLEDCOST,',
+' group by TRUNC(CHARGEPERIODSTART,''DDD''), BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY, BILLEDCOST,',
 'RESOURCETYPE, SERVICENAME, SKUID, CHARGEDESCRIPTION,  PRICINGUNIT, OCI_COMPARTMENTNAME, OCI_COMPARTMENTID, USAGEUNIT',
-'order by "Day" asc;'))
+'order by TRUNC(CHARGEPERIODSTART,''DDD'') asc;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P3_SUBSCRIPTION_ID'
 ,p_plug_display_condition_type=>'VALUE_OF_ITEM_IN_CONDITION_IN_COLON_DELIMITED_LIST'
@@ -22912,7 +22912,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 ' AND (CHARGEDESCRIPTION IN (select column_value from table (apex_string.split(:P3_CHARGEDESCRIPTION, '',''))) or :P3_CHARGEDESCRIPTION is null)',
 ' AND (RESOURCETYPE IN (select column_value from table (apex_string.split(:P3_RESOURCE_TYPE, '',''))) or :P3_RESOURCE_TYPE is null)',
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P3_RESOURCE_NAME, '',''))) or :P3_RESOURCE_NAME is null)',
-'GROUP BY "Week"'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'')'))
 ,p_series_name_column_name=>'Week'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -24762,9 +24762,9 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P4_RESOURCE_NAME, '',''))) or :P4_RESOURCE_NAME is null)',
 ' AND (NVL(CHARGEPERIODSTART, TRUNC(SYSDATE - 8,''DDD'')) >= NVL(TO_TIMESTAMP(:P4_FROMDATE, ''DD-MON-YYYY HH24:MI:SS''), TRUNC(SYSDATE - 8,''DDD'')))',
 ' AND (CHARGEPERIODEND <= TO_TIMESTAMP(:P4_TODATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P4_TODATE is null)',
-' group by "Day", BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY, BILLEDCOST,',
+' group by TRUNC(CHARGEPERIODSTART,''DDD''), BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY, BILLEDCOST,',
 'RESOURCETYPE, SERVICENAME, SKUID, CHARGEDESCRIPTION,  PRICINGUNIT, OCI_COMPARTMENTNAME, OCI_COMPARTMENTID, USAGEUNIT',
-'order by "Day" asc;'))
+'order by TRUNC(CHARGEPERIODSTART,''DDD'') asc;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P4_TENANT,P4_SUBSCRIPTION_ID,P4_REGION,P4_SELECT_COMPARTMENT,P4_SERVICE_CATEGORY,P4_SERVICE_NAME,P4_CHARGEDESCRIPTION,P4_RESOURCE_TYPE,P4_RESOURCE_NAME'
 ,p_plug_display_condition_type=>'VALUE_OF_ITEM_IN_CONDITION_IN_COLON_DELIMITED_LIST'
@@ -26138,8 +26138,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P5_FROMDATE, ''DD-MON-YYYY'') OR :P5_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P5_TODATE, ''DD-MON-YYYY'') OR :P5_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE"',
-'order by "DATE" ASC;'))
+'group by TRUNC(CHARGEPERIODSTART,''DDD'')',
+'order by TRUNC(CHARGEPERIODSTART,''DDD'') ASC;'))
 ,p_series_name_column_name=>'Total'
 ,p_items_value_column_name=>'COST'
 ,p_items_label_column_name=>'DATE'
@@ -26207,8 +26207,8 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P5_RESOURCE_NAME, '',''))) or :P5_RESOURCE_NAME is null)',
 ' AND TRUNC(CHARGEPERIODEND, ''MM'') >= ADD_MONTHS(TRUNC(SYSDATE, ''MM''), -6)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "Month", "Category", "Description", "SKU"',
-'order by "Month" ASC;',
+'group by TRUNC(CHARGEPERIODSTART,''MM'', SERVICECATEGORY, CHARGEDESCRIPTION, SKUID',
+'order by TRUNC(CHARGEPERIODSTART,''MM'' ASC;',
 ''))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
@@ -26376,9 +26376,9 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P5_RESOURCE_NAME, '',''))) or :P5_RESOURCE_NAME is null)',
 ' AND (CHARGEPERIODSTART >= TO_TIMESTAMP(:P5_FROMDATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P5_FROMDATE is null)',
 ' AND (CHARGEPERIODEND <= TO_TIMESTAMP(:P5_TODATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P5_TODATE is null)',
-' group by "Month", BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY,',
+' group by TRUNC(CHARGEPERIODEND,''MM''), BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY,',
 'RESOURCETYPE, SERVICENAME, SKUID, CHARGEDESCRIPTION,  PRICINGUNIT, OCI_COMPARTMENTNAME, OCI_COMPARTMENTID',
-'order by "Month" desc;'))
+'order by TRUNC(CHARGEPERIODEND,''MM'') desc;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P5_SUBSCRIPTION_ID'
 ,p_plug_display_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
@@ -27258,9 +27258,9 @@ wwv_flow_imp_page.create_page_plug(
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P5_RESOURCE_NAME, '',''))) or :P5_RESOURCE_NAME is null)',
 ' AND (CHARGEPERIODSTART >= TO_TIMESTAMP(:P5_FROMDATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P5_FROMDATE is null)',
 ' AND (CHARGEPERIODEND <= TO_TIMESTAMP(:P5_TODATE, ''DD-MON-YYYY HH24:MI:SS'') OR :P5_TODATE is null)',
-' group by "Week", BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY,',
+' group by TRUNC(CHARGEPERIODEND,''IW''), BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY, SERVICECATEGORY,',
 'RESOURCETYPE, SERVICENAME, SKUID, CHARGEDESCRIPTION,  PRICINGUNIT, OCI_COMPARTMENTNAME, OCI_COMPARTMENTID',
-'order by "Week" desc;'))
+'order by TRUNC(CHARGEPERIODEND,''IW'') desc;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P5_SUBSCRIPTION_ID'
 ,p_plug_display_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
@@ -27966,8 +27966,8 @@ wwv_flow_imp_page.create_jet_chart_series(
 'AND (CHARGEPERIODSTART >= TO_DATE(:P5_FROMDATE, ''DD-MON-YYYY'') OR :P5_FROMDATE is null)',
 'AND (CHARGEPERIODEND <= TO_DATE(:P5_TODATE, ''DD-MON-YYYY'') OR :P5_TODATE is null)',
 'AND TRUNC(CHARGEPERIODEND,''DDD'') - TRUNC(CHARGEPERIODSTART,''DDD'') <60',
-'group by "DATE", SERVICECATEGORY',
-'order by "DATE" ASC;'))
+'group by TRUNC(CHARGEPERIODSTART,''DDD''), SERVICECATEGORY',
+'order by TRUNC(CHARGEPERIODSTART,''DDD'') ASC;'))
 ,p_ajax_items_to_submit=>'P5_SUBSCRIPTION_ID'
 ,p_series_name_column_name=>'SERVICECATEGORY'
 ,p_items_value_column_name=>'COST'
@@ -28115,7 +28115,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 ' AND (CHARGEDESCRIPTION IN (select column_value from table (apex_string.split(:P5_CHARGEDESCRIPTION, '',''))) or :P5_CHARGEDESCRIPTION is null)',
 ' AND (RESOURCETYPE IN (select column_value from table (apex_string.split(:P5_RESOURCE_TYPE, '',''))) or :P5_RESOURCE_TYPE is null)',
 ' AND (RESOURCEID IN (select column_value from table (apex_string.split(:P5_RESOURCE_NAME, '',''))) or :P5_RESOURCE_NAME is null)',
-'GROUP BY "Week"'))
+'GROUP BY TRUNC(CHARGEPERIODEND,''IW'')'))
 ,p_series_name_column_name=>'Week'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Week'
@@ -34760,8 +34760,8 @@ wwv_flow_imp_page.create_page_item(
 '    AND o.COMPARTMENT_ID NOT IN (''ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta'',''ocid1.compartment.oc1..aaaaaaaamohvntqbkl4w6otoydob3ldl54anwf2jyqmhgafzhkev2a4g2epa'') ',
 '    AND o.COMPARTMENT_ID=f.OCI_COMPARTMENTID',
 '    AND (f.BILLINGACCOUNTID  IN (select column_value from table (apex_string.split(:P503_SUBSCRIPTION, '',''))) or :P503_SUBSCRIPTION is null)',
-'    group by "Path", "CompartmentID"',
-'    order by "Path";'))
+'    group by PATH, COMPARTMENT_ID',
+'    order by PATH;'))
 ,p_lov_cascade_parent_items=>'P503_TENANCY,P503_SUBSCRIPTION'
 ,p_ajax_items_to_submit=>'P503_TENANCY,P503_SUBSCRIPTION'
 ,p_ajax_optimize_refresh=>'N'

@@ -26,8 +26,8 @@ end;
 prompt  WORKSPACE 7775527647407456
 --
 -- Workspace, User Group, User, and Team Development Export:
---   Date and Time:   08:22 Friday June 6, 2025
---   Exported By:     OCI_FOCUS_REPORTS
+--   Date and Time:   13:32 Tuesday May 27, 2025
+--   Exported By:     ANDREAS.THEODORIDIS@ORACLE.COM
 --   Export Type:     Workspace Export
 --   Version:         24.2.0
 --   Instance ID:     7517432132175328
@@ -36,7 +36,7 @@ prompt  WORKSPACE 7775527647407456
 --   Using Instance Administration / Manage Workspaces
 --   or
 --   Using SQL*Plus as the Oracle user APEX_240200
- 
+
 begin
     wwv_flow_imp.set_security_group_id(p_security_group_id=>7775527647407456);
 end;
@@ -45,7 +45,7 @@ end;
 -- W O R K S P A C E
 -- Creating a workspace will not create database schemas or objects.
 -- This API creates only the meta data for this APEX workspace
-prompt  Creating workspace USAGE...
+prompt  Creating workspace OCI_FOCUS_REPORTS...
 begin
 wwv_flow_fnd_user_api.create_company (
   p_id => 7775835068407500
@@ -108,37 +108,145 @@ prompt  Creating group grants...
 prompt  Creating Users...
 begin
 wwv_flow_fnd_user_api.create_fnd_user (
-  p_user_id                      => '63531805767603756',
+  p_user_id                      => '7775794346407464',
   p_user_name                    => 'OCI_FOCUS_REPORTS',
   p_first_name                   => '',
   p_last_name                    => '',
   p_description                  => '',
-  p_email_address                => 'ofcr@ofcr.internal.local',
+  p_email_address                => 'oci_focus_reports@oci-focus-reports.internal.local',
   p_web_password                 => 'OvApex2025',
   p_web_password_format          => 'CLEAR_TEXT',
   p_group_ids                    => '',
   p_developer_privs              => 'ADMIN:CREATE:DATA_LOADER:EDIT:HELP:MONITOR:SQL',
-  p_default_schema               => 'USAGE',
+  p_default_schema               => 'OCI_FOCUS_REPORTS',
   p_account_locked               => 'N',
-  p_account_expiry               => to_date('202506060821','YYYYMMDDHH24MI'),
+  p_account_expiry               => to_date('202503211408','YYYYMMDDHH24MI'),
   p_failed_access_attempts       => 0,
   p_change_password_on_first_use => 'Y',
-  p_first_password_use_occurred  => 'N',
+  p_first_password_use_occurred  => 'Y',
   p_allow_app_building_yn        => 'Y',
   p_allow_sql_workshop_yn        => 'Y',
   p_allow_team_development_yn    => 'Y',
-  p_allow_access_to_schemas      => '');
+  p_allow_access_to_schemas      => 'Y');
 end;
 /
 ---------------------------
 -- D G  B L U E P R I N T S
 -- Creating Data Generator Blueprints...
- 
+prompt Check Compatibility...
+begin
+-- This date identifies the minimum version required to import this file.
+wwv_flow_team_api.check_version(p_version_yyyy_mm_dd=>'2010.05.13');
+end;
+/
+
+begin wwv_flow.g_import_in_progress := true; wwv_flow.g_user := USER; end;
+/
+
+--
+prompt ...feedback
+--
+begin
+null;
+end;
+/
+--
+prompt ...Issue Templates
+--
+begin
+null;
+end;
+/
+--
+prompt ...Issue Email Prefs
+--
+begin
+null;
+end;
+/
+--
+prompt ...Label Groups
+--
+begin
+null;
+end;
+/
+--
+prompt ...Labels
+--
+begin
+null;
+end;
+/
+--
+prompt ... Milestones
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issue Attachments
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues Milestones
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues Labels
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues stakeholders
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues Comments
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues Events
+--
+begin
+null;
+end;
+/
+--
+prompt ... Issues Notifications
+--
+begin
+null;
+end;
+/
+
 prompt ... Extension Links
- 
- 
+
+
 prompt ... Extension Grants
- 
+
 begin
 wwv_flow_imp.import_end(p_auto_install_sup_obj => nvl(wwv_flow_application_install.get_auto_install_sup_obj, false)
 );
