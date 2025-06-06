@@ -171,7 +171,7 @@ wwv_imp_workspace.create_credential(
 ,p_name=>'ca_user_for_oci'
 ,p_static_id=>'ca_user_for_oci'
 ,p_authentication_type=>'OCI'
-,p_namespace=>'ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta'
+,p_namespace=>'__TENANCY_OCID__'
 ,p_prompt_on_install=>true
 );
 end;
