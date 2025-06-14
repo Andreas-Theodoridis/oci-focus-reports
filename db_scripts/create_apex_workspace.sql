@@ -26,11 +26,11 @@ end;
 prompt  WORKSPACE 7775527647407456
 --
 -- Workspace, User Group, User, and Team Development Export:
---   Date and Time:   08:22 Friday June 6, 2025
---   Exported By:     OCI_FOCUS_REPORTS
+--   Date and Time:   16:56 Saturday June 14, 2025
+--   Exported By:     ANDREAS.THEODORIDIS@ORACLE.COM
 --   Export Type:     Workspace Export
---   Version:         24.2.0
---   Instance ID:     7517432132175328
+--   Version:         24.2.5
+--   Instance ID:     7782595513013869
 --
 -- Import:
 --   Using Instance Administration / Manage Workspaces
@@ -45,7 +45,7 @@ end;
 -- W O R K S P A C E
 -- Creating a workspace will not create database schemas or objects.
 -- This API creates only the meta data for this APEX workspace
-prompt  Creating workspace USAGE...
+prompt  Creating workspace OCI_FOCUS_REPORTS...
 begin
 wwv_flow_fnd_user_api.create_company (
   p_id => 7775835068407500
@@ -62,7 +62,7 @@ wwv_flow_fnd_user_api.create_company (
  ,p_allow_team_development_yn => 'Y'
  ,p_allow_to_be_purged_yn => 'Y'
  ,p_allow_restful_services_yn => 'Y'
- ,p_source_identifier => 'OCI_FOCUS_REPORTS'
+ ,p_source_identifier => 'OCI_FOCU'
  ,p_webservice_logging_yn => 'Y'
  ,p_path_prefix => 'OCI_FOCUS_REPORTS'
  ,p_files_version => 1
@@ -78,7 +78,7 @@ end;
 prompt  Creating Groups...
 begin
 wwv_flow_fnd_user_api.create_user_group (
-  p_id => 1405898031030452,
+  p_id => 1455055307476315,
   p_GROUP_NAME => 'OAuth2 Client Developer',
   p_SECURITY_GROUP_ID => 10,
   p_GROUP_DESC => 'Users authorized to register OAuth2 Client Applications');
@@ -86,7 +86,7 @@ end;
 /
 begin
 wwv_flow_fnd_user_api.create_user_group (
-  p_id => 1405745204030452,
+  p_id => 1454929411476315,
   p_GROUP_NAME => 'RESTful Services',
   p_SECURITY_GROUP_ID => 10,
   p_GROUP_DESC => 'Users authorized to use RESTful Services with this workspace');
@@ -94,7 +94,7 @@ end;
 /
 begin
 wwv_flow_fnd_user_api.create_user_group (
-  p_id => 1405683304030451,
+  p_id => 1454886836476316,
   p_GROUP_NAME => 'SQL Developer',
   p_SECURITY_GROUP_ID => 10,
   p_GROUP_DESC => 'Users authorized to use SQL Developer with this workspace');
@@ -118,12 +118,12 @@ wwv_flow_fnd_user_api.create_fnd_user (
   p_web_password_format          => 'CLEAR_TEXT',
   p_group_ids                    => '',
   p_developer_privs              => 'ADMIN:CREATE:DATA_LOADER:EDIT:HELP:MONITOR:SQL',
-  p_default_schema               => 'USAGE',
+  p_default_schema               => '',
   p_account_locked               => 'N',
-  p_account_expiry               => to_date('202506060821','YYYYMMDDHH24MI'),
+  p_account_expiry               => to_date('202506141655','YYYYMMDDHH24MI'),
   p_failed_access_attempts       => 0,
-  p_change_password_on_first_use => 'Y',
-  p_first_password_use_occurred  => 'N',
+  p_change_password_on_first_use => 'N',
+  p_first_password_use_occurred  => 'Y',
   p_allow_app_building_yn        => 'Y',
   p_allow_sql_workshop_yn        => 'Y',
   p_allow_team_development_yn    => 'Y',
@@ -133,12 +133,6 @@ end;
 ---------------------------
 -- D G  B L U E P R I N T S
 -- Creating Data Generator Blueprints...
- 
-prompt ... Extension Links
- 
- 
-prompt ... Extension Grants
- 
 begin
 wwv_flow_imp.import_end(p_auto_install_sup_obj => nvl(wwv_flow_application_install.get_auto_install_sup_obj, false)
 );
