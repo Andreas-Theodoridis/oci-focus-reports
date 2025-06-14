@@ -29,5 +29,4 @@ echo "Scaling UP ADB OCID: $ADB_OCID to Compute Count: $COMPUTE_COUNT" >> "$LOG_
 
 oci db autonomous-database update \
   --autonomous-database-id "$ADB_OCID" \
-  --compute-count "$COMPUTE_COUNT" \
-  >> "$LOG_PATH" 2>&1
+  --compute-count "$COMPUTE_COUNT"
