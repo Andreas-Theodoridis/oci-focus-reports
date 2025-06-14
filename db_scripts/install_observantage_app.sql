@@ -1014,7 +1014,7 @@ wwv_flow_imp_shared.create_web_source_operation(
 ,p_operation=>'POST'
 ,p_database_operation=>'FETCH_COLLECTION'
 ,p_url_pattern=>'.'
-,p_request_body_template=>'{"tenantId":"ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta","granularity":"DAILY","startTime":"2025-03-01T00:00:00.000Z","endTime":"2025-04-01T00:00:00.000Z","filter":{"operator":"AND","dimensions":[],"tags":[],"filt'
+,p_request_body_template=>'{"tenantId":"ocid1.tenancy.oc1..aaa..ta","granularity":"DAILY","startTime":"2025-03-01T00:00:00.000Z","endTime":"2025-04-01T00:00:00.000Z","filter":{"operator":"AND","dimensions":[],"tags":[],"filt'
 ||'ers":[{"operator":"OR","dimensions":[{"value":"9379274","key":"subscriptionId"}],"tags":[],"filters":[]}]},"compartmentDepth":6,"queryType":"COST","groupBy":["service"]}'
 ,p_force_error_for_http_404=>false
 ,p_allow_fetch_all_rows=>false
@@ -21936,9 +21936,9 @@ wwv_flow_imp_page.create_page_plug(
 '    SELECT DISTINCT o.PATH AS "Compartment Path", o.COMPARTMENT_ID AS "CompartmentID"',
 '    FROM OCI_COMPARTMENTS_PY o',
 '    WHERE o.COMPARTMENT_ID NOT IN (',
-'        ''ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta'',',
-'        ''ocid1.compartment.oc1..aaaaaaaamohvntqbkl4w6otoydob3ldl54anwf2jyqmhgafzhkev2a4g2epa'',',
-'        ''ocid1.compartment.oc1..aaaaaaaacfxctxdpv3e64wrwg3mgyyeytsqko5hn47yr7rb3fpg7ssedm6xa''',
+'        ''ocid1.tenancy.oc1..aaaaaaaa..uiprhc3vta'',',
+'        ''ocid1.compartment.oc1..aaaaaaaam...epa'',',
+'        ''ocid1.compartment.oc1..aaaaaaaacfx...ssedm6xa''',
 '    )',
 ')',
 'SELECT ',
@@ -25015,10 +25015,10 @@ wwv_flow_imp_page.create_page_plug(
 '    SELECT DISTINCT o.PATH AS "Compartment Path", o.COMPARTMENT_ID AS "CompartmentID"',
 '    FROM OCI_COMPARTMENTS_PY o',
 '    WHERE o.COMPARTMENT_ID NOT IN (',
-'        ''ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta'',',
-'        ''ocid1.compartment.oc1..aaaaaaaamohvntqbkl4w6otoydob3ldl54anwf2jyqmhgafzhkev2a4g2epa'',',
-'        ''ocid1.compartment.oc1..aaaaaaaacfxctxdpv3e64wrwg3mgyyeytsqko5hn47yr7rb3fpg7ssedm6xa'',',
-'        ''ocid1.tenancy.oc1..aaaaaaaaqr55dbhrptqbdzghhochnmaarikn6h2chep53nugzd5tygphvemq''',
+'        ''ocid1.tenancy.oc1..aaaaaaaa5azpt...rhc3vta'',',
+'        ''ocid1.compartment.oc1..aaaaaaaamo...2a4g2epa'',',
+'        ''ocid1.compartment.oc1..aaaaaaaacfx...sedm6xa'',',
+'        ''ocid1.tenancy.oc1..aaaaaaaaqr5....5tygphvemq''',
 '    )',
 ')',
 'SELECT ',
@@ -35504,7 +35504,7 @@ wwv_flow_imp_page.create_page_item(
 'select NVL(o.PATH,''ROOT'') AS "Path", o.COMPARTMENT_ID AS "CompartmentID"',
 '    from OCI_COMPARTMENTS_PY o, FOCUS_REPORTS_PY f',
 '    where (f.SUBACCOUNTNAME  IN (select column_value from table (apex_string.split(:P503_TENANCY, '',''))) or :P503_TENANCY is null)',
-'    AND o.COMPARTMENT_ID NOT IN (''ocid1.tenancy.oc1..aaaaaaaa5azptegxig27qdvycwt4demrwcdk2aia6youcjtx6guiprhc3vta'',''ocid1.compartment.oc1..aaaaaaaamohvntqbkl4w6otoydob3ldl54anwf2jyqmhgafzhkev2a4g2epa'') ',
+'    AND o.COMPARTMENT_ID NOT IN (''ocid1.tenancy.oc1..aaaaaaaa5azpt...vta'',''ocid1.compartment.oc1..aaaaaaaamoh...2epa'') ',
 '    AND o.COMPARTMENT_ID=f.OCI_COMPARTMENTID',
 '    AND (f.BILLINGACCOUNTID  IN (select column_value from table (apex_string.split(:P503_SUBSCRIPTION, '',''))) or :P503_SUBSCRIPTION is null)',
 '    group by PATH, COMPARTMENT_ID',

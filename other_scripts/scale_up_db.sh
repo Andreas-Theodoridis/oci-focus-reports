@@ -1,10 +1,15 @@
 #!/bin/bash
 
 # Set PATH (optional)
+export OCI_CLI_AUTH=instance_principal
 export PATH=$PATH:/usr/local/bin
 
-OCID_FILE="./.adb_ocid"
-COMPUTE_FILE="./.compute_count_up"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+OCID_FILE="$SCRIPT_DIR/.adb_ocid"
+COMPUTE_FILE="$SCRIPT_DIR/.compute_count_up"
+LOG_PATH="$SCRIPT_DIR/update_db_up.log"
 
 if [ ! -f "$OCID_FILE" ] || [ ! -f "$COMPUTE_FILE" ]; then
   echo "Enter the Autonomous Database OCID:"
@@ -20,8 +25,7 @@ else
   COMPUTE_COUNT=$(cat "$COMPUTE_FILE")
 fi
 
-echo "Scaling UP ADB OCID: $ADB_OCID to Compute Count: $COMPUTE_COUNT"
-LOG_PATH="/home/opc/oci-focus-reports/logs/update_db_up.log"
+echo "Scaling UP ADB OCID: $ADB_OCID to Compute Count: $COMPUTE_COUNT" >> "$LOG_PATH"
 
 oci db autonomous-database update \
   --autonomous-database-id "$ADB_OCID" \

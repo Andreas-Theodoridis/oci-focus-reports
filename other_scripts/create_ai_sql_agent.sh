@@ -33,6 +33,10 @@ oci generative-ai-agent agent-endpoint create \
     --agent-id "$AI_AGENT_JSON" \
     --compartment-id "$COMPARTMENT_ID" \
     --display-name "Focus-Reports-SQL-Agent-Endpoint" \
+    --should-enable-trace true \
+    --should-enable-citation true \
+    --should-enable-session true \
+    --should-enable-multi-language true \
     --query 'data.id' --raw-output > /home/opc/gen_ai_agent_endpoint_id.txt
 
 # Step 3: Create OCI AI SQL Tool
@@ -69,6 +73,4 @@ oci generative-ai-agent tool create-tool-sql-tool-config \
   --tool-config-should-enable-self-correction true \
   --tool-config-dialect ORACLE_SQL \
   --tool-config-model-size LARGE \
-  --wait-for-state SUCCEEDED \
-  --wait-for-state FAILED \
   --query 'data.id' --raw-output > /home/opc/sql_tool_ocid.txt
