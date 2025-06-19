@@ -186,6 +186,9 @@ def upload_csv_to_oracle(csv_data, db_user, db_pass, db_dsn):
     )
     cursor = conn.cursor()
 
+    # Prevent ORA-12838 error
+    cursor.execute("ALTER SESSION DISABLE PARALLEL DML")
+
     table_name = compartments_table
     merge_sql = f"""
     MERGE INTO {table_name} tgt
