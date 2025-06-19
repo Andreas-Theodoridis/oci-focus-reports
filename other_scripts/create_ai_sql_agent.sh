@@ -35,7 +35,7 @@ oci generative-ai-agent agent-endpoint create \
     --display-name "Focus-Reports-SQL-Agent-Endpoint" \
     --should-enable-trace true \
     --should-enable-citation true \
-    --should-enable-session true \
+    --should-enable-session false \
     --should-enable-multi-language true \
     --query 'data.id' --raw-output > /home/opc/gen_ai_agent_endpoint_id.txt
 

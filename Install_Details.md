@@ -26,15 +26,22 @@ Go to  OCI_FOCUS_REPORTS Workspace -> App Builder -> Workspace Utilities -> Web 
 Client ID or Username -> Client ID
 Client Secret or Password -> secret
 
-Initial Load:
+
+
+Run below script for initial load:
+/home/opc/oci-focus-reports/other_scripts/initial_load.sh
+
+Creae SQL AI Agent (it may take a few minutes to complete, please check OCI Console):
+/home/opc/oci-focus-reports/other_scripts/create_ai_sql_agent.sh
+
+/*Initial Load:
 Login to VM:
 Edit config.json:
 "use_dynamic_prefix": true -> "use_dynamic_prefix": false
 
 After Initial Load:
 "use_dynamic_prefix": false -> "use_dynamic_prefix": true
-
-Run all python scripts in /home/opc/oci-focus-reports/python_scripts except compress_old_focus_report_csv.py and oci_exa_maintenance_details.py unless you are an ExaCC/ExaDedicated customer
+Run all python scripts in /home/opc/oci-focus-reports/python_scripts except compress_old_focus_report_csv.py and oci_exa_maintenance_details.py unless you are an ExaCC/ExaDedicated customer*/
 
 For OVChat:
 
