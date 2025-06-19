@@ -34,7 +34,7 @@ prompt APPLICATION 100 - Focus Cost Reporting
 --   Application:     100
 --   Name:            Focus Cost Reporting
 --   Date and Time:   08:31 Thursday June 19, 2025
---   Exported By:     ANDREAS.THEODORIDIS@ORACLE.COM
+--   Exported By:     OCI_FOCUS_REPORTS
 --   Flashback:       0
 --   Export Type:     Application Export
 --     Pages:                     31
