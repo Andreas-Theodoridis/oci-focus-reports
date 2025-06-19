@@ -21,4 +21,7 @@ git clean -fdX
 echo "♻️ Restoring config.json from backup..."
 cp "$CONFIG_BACKUP" "$CONFIG_REPO_PATH"
 
+echo "Making bash scripts executable"
+chmod u+x /home/opc/oci-focus-reports/other_scripts/*.sh
+
 echo "✅ Update complete. config.json restored to $CONFIG_REPO_PATH"

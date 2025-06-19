@@ -31,8 +31,15 @@ Client Secret or Password -> secret
 Run below script for initial load:
 /home/opc/oci-focus-reports/other_scripts/initial_load.sh
 
-Creae SQL AI Agent (it may take a few minutes to complete, please check OCI Console):
+Create SQL AI Agent (it may take a few minutes to complete, please check OCI Console):
 /home/opc/oci-focus-reports/other_scripts/create_ai_sql_agent.sh
+
+Run once scale_up_db.sh and scale_down_db.sh for scheduled ADW scale up during workday business hours (you need ADW's OCID which you can get from OCI Console)
+/home/opc/oci-focus-reports/other_scripts/scale_up_db.sh
+/home/opc/oci-focus-reports/other_scripts/scale_down_db.sh
+
+Install crontab entries:
+/home/opc/oci-focus-reports/other_scripts/install_cron.sh
 
 /*Initial Load:
 Login to VM:
