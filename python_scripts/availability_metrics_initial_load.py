@@ -201,5 +201,47 @@ def upload_csv_to_oracle(csv_file, db_user, db_pass, db_dsn):
     conn.close()
     logging.info("✅ Bulk insert complete.")
 
+def main():
+    if use_test_creds:
+        db_user = config["test_credentials"]["user"]
+        db_pass = config["test_credentials"]["password"]
+        db_dsn = config["test_credentials"]["dsn"]
+    else:
+        db_conf = config["db_credentials"]
+        db_user = config["db_credentials"]["user"]
+        db_pass = get_secret_value(db_conf["pass_secret_ocid"], signer)
+        db_dsn = config["db_credentials"]["dsn"]
+
+    compartments = get_all_compartments()
+
+    for region in regions:
+        logging.info(f"\n🌍 Region: {region}")
+        monitoring_client = oci.monitoring.MonitoringClient({}, signer=signer)
+        monitoring_client.base_client.set_region(region)
+
+        for group in metric_groups:
+            logging.info(f"\n📊 Namespace: {group['namespace']}")
+            rows = []
+
+            for compartment in compartments:
+                if metrics_exist(monitoring_client, compartment.id, group["namespace"], group["metrics"]):
+                    for metric in group["metrics"]:
+                        logging.info(f"📦 {compartment.name} → {metric}")
+                        get_metric_data(monitoring_client, compartment, group["namespace"], metric, group["resource_display_key"], rows)
+                        time.sleep(0.4)
+                time.sleep(0.1)
+
+            # Use os.path.join to create full path
+            output_path = os.path.join(output_dir, group["output_file"])
+            csv_file = group["output_file"]
+            with open(output_path, "w", newline="") as f:
+                fieldnames = ["resourceDisplayName", "timestamp", "namespace", "compartment_id", "metric_name", "value"]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            logging.info(f"✅ {output_path} written with {len(rows)} rows.")
+            upload_csv_to_oracle(output_path, db_user, db_pass, db_dsn)
+
 if __name__ == "__main__":
     main()
