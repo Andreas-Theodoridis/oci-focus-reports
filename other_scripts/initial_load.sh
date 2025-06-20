@@ -20,7 +20,11 @@ for script in "${scripts[@]}"; do
 done
 
 # Optional script execution
-read -p "❓ Do you want to run oci_exa_maintenance_details.py? (y/n): " run_exa
+if [ -t 0 ]; then
+    read -p "❓ Do you want to run oci_exa_maintenance_details.py? (y/n): " run_exa
+else
+    run_exa="n"
+fi
 
 if [[ "$run_exa" =~ ^[Yy]$ ]]; then
     echo "🚀 Running oci_exa_maintenance_details.py..."

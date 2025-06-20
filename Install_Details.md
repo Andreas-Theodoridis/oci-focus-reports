@@ -41,6 +41,9 @@ Run once scale_up_db.sh and scale_down_db.sh for scheduled ADW scale up during w
 Install crontab entries:
 /home/opc/oci-focus-reports/other_scripts/install_cron.sh
 
+Login to App -> Edit tables -> Add Subscription Details -> Click on a Subscription and add it to populate the fields. Edit just "Credits Consumed", "Credits Consumed Date" and Order Name.
+Login to App -> Edit tables -> Workloads -> Add Workload -> Select required details and submit. Basically here we create the differenet workloads, environments, customers, sub customers. For cost Analysis we can group compartments together so that it represents a workload or an environment or a customer.
+
 /*Initial Load:
 Login to VM:
 Edit config.json:
@@ -54,4 +57,5 @@ For OVChat:
 
 Create Credentials for focus-reports-user => Create API Key
 Go to Workspace Home => Workspace Credentials => Web Credentials => modify ca_user_for_oci and enter details from the API key created above
-Got to App => Page 6 => Pre-Rendering => Before Regions => Computations => P6_SQL_AGENT_ID => Static ID => Enter OCID of the newly created Agent Endpoint: ocid1.genaiagentendpoint.oc1.eu-frankfurt-1.amaaaaaaxnbdvtaa5wk2njppjcqa5lpgcqdsumfwaaozb77lkkjn6pd4e3aa 
+Got to App => Page 2 => Pre-Rendering => Before Regions => Computations => P6_SQL_AGENT_ID => Static ID => Enter OCID of the newly created Agent Endpoint: ocid1.genaiagentendpoint.oc1.eu-frankfurt-1.amaaaaaaxnbdvtaa5wk2njppjcqa5lpgcqdsumfwaaozb77lkkjn6pd4e3aa 
+On the same Page => Computations => P2_COMPARTMENT_ID => The compartment ID the AI Agent is created

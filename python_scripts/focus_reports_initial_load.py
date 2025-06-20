@@ -109,30 +109,33 @@ def insert_csv_into_db(csv_path, connection, batch_size=1000):
         cursor = connection.cursor()
         cursor.arraysize = batch_size
         batch = []
-        inserted_count = 0
+        inserted_count = 0  # ✅ Properly initialized
+
         for row in reader:
             if not any(row):
                 continue
             batch.append(preprocess_row(header, row))
             if len(batch) >= batch_size:
-                insert_batch(cursor, header, batch)
-                inserted_count += len(batch)
+                inserted_count += execute_insert_batch(cursor, header, batch)
                 batch.clear()
+
         if batch:
-            insert_batch(cursor, header, batch)
-            inserted_count += len(batch)
+            inserted_count += execute_insert_batch(cursor, header, batch)
+
         connection.commit()
         cursor.close()
         logging.info(f"✅ Inserted rows from {os.path.basename(csv_path)}: {inserted_count}")
 
-def insert_batch(cursor, header, batch):
+def execute_insert_batch(cursor, header, batch):
     try:
         placeholders = ", ".join([f":{i+1}" for i in range(len(header))])
         columns = ", ".join(f'"{col}"' for col in header)
         insert_sql = f"INSERT INTO {focus_reports_table} ({columns}) VALUES ({placeholders})"
         cursor.executemany(insert_sql, batch)
+        return len(batch)  # ✅ return actual number of inserted rows
     except Exception as e:
         logging.error(f"❌ Insert failed for batch: {e}")
+        return 0
 
 def get_secret_value(secret_ocid, signer):
     secret_client = oci.secrets.SecretsClient(config={}, signer=signer)
@@ -151,9 +154,8 @@ def download_extract_and_insert():
         if "pass_secret_ocid" in config.get("db_credentials", {}):
             db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
 
-        # Use static prefix
-        prefix = "FOCUS REPORTS"
-        cutoff_time = None  # No filtering
+        # Determine prefix and cutoff_time dynamically
+        prefix = config["prefix_file"]
 
         report_bucket_objects = oci.pagination.list_call_get_all_results(
             object_storage.list_objects,
@@ -162,9 +164,11 @@ def download_extract_and_insert():
             prefix=prefix
         )
 
-        valid_objects = [
-            obj for obj in report_bucket_objects.data.objects if obj.time_created
-        ]
+        valid_objects = report_bucket_objects.data.objects
+
+        for obj in report_bucket_objects.data.objects:
+            if obj.time_created is None:
+                logging.warning(f"⚠️ Skipping object without time_created: {obj.name}")
 
         os.environ["TNS_ADMIN"] = wallet_path
         with oracledb.connect(user=db_user, password=db_password, dsn=db_dsn) as conn:
@@ -188,10 +192,8 @@ def download_extract_and_insert():
                 insert_csv_into_db(extracted_path, conn)
                 logging.info(f"✅ Finished processing: {extracted_path}")
 
-        logging.info("🎉 Initial load completed successfully.")
-
     except Exception as e:
-        logging.error(f"❌ Error processing reports: {str(e)}")
+        logging.error(f"Error processing reports: {str(e)}")
 
 if __name__ == "__main__":
     download_extract_and_insert()

@@ -15880,7 +15880,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -15915,7 +15915,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -15950,7 +15950,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -15985,7 +15985,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16020,7 +16020,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16055,7 +16055,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16090,7 +16090,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16125,7 +16125,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16160,7 +16160,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16195,7 +16195,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16230,7 +16230,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16265,7 +16265,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16300,7 +16300,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16335,7 +16335,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -16370,7 +16370,7 @@ wwv_flow_imp_page.create_jet_chart_series(
 '                ), '',''',
 '            ))',
 '            )',
-'GROUP BY CHARGEPERIODEND;'))
+'GROUP BY TRUNC(CHARGEPERIODEND, ''MM'');'))
 ,p_series_name_column_name=>'Workload'
 ,p_items_value_column_name=>'Cost'
 ,p_items_label_column_name=>'Month'
@@ -17322,9 +17322,7 @@ wwv_flow_imp_page.create_page_computation(
 ,p_computation_type=>'QUERY'
 ,p_computation=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT LISTAGG(SUBSCRIPTION_ID, '', '') WITHIN GROUP (ORDER BY SUBSCRIPTION_ID) AS subscription_ids',
-'FROM OCI_SUBSCRIPTION_DETAILS',
-'WHERE CREDITS_CONSUMED = ''No''',
-'  AND CURRENCY = :P1_CURRENCY;'))
+'FROM (SELECT DISTINCT SUBSCRIPTION_ID FROM OCI_SUBSCRIPTION_DETAILS WHERE CREDITS_CONSUMED = ''No'' AND CURRENCY = :P1_CURRENCY); '))
 );
 wwv_flow_imp_page.create_page_computation(
  p_id=>wwv_flow_imp.id(61324805507127676)
@@ -17559,10 +17557,7 @@ wwv_flow_imp_page.create_report_region(
 '      else',
 '         ''''',
 '   end',
-'   || ''<div id="custom-loader">',
-'      <div class="fa fa-spinner fa-spin fa-2x" style="color: #fa541c;"></div>',
-'   </div>',
-'   <div class="chat-row chat-user">',
+'   || ''<div class="chat-row chat-user">',
 '     <div class="chat-bubble user">',
 '       <div class="chat-icon">''',
 '   || upper(substr(',
@@ -18785,6 +18780,9 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_new_grid_row=>false
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div id="custom-loader">',
+'    <div class="fa fa-spinner fa-spin fa-2x" style="color: #fa541c;"></div>',
+'</div>',
 '<div class="chat-action-icons">',
 '    <div class="chat-action">',
 '        <button class="selectConv t-Button custom-btn" type="button">',
@@ -21501,7 +21499,7 @@ wwv_flow_imp_page.create_page_plug(
 '    SELECT DISTINCT o.PATH AS "Compartment Path", o.COMPARTMENT_ID AS "CompartmentID"',
 '    FROM OCI_COMPARTMENTS_PY o',
 '    WHERE o.COMPARTMENT_ID NOT IN (',
-'        ''ocid1.tenancy.oc1.....'',',
+'        ''ocid1.tenancy.oc1.....''',
 '    )',
 ')',
 'SELECT ',
@@ -24583,7 +24581,7 @@ wwv_flow_imp_page.create_page_plug(
 '    SELECT DISTINCT o.PATH AS "Compartment Path", o.COMPARTMENT_ID AS "CompartmentID"',
 '    FROM OCI_COMPARTMENTS_PY o',
 '    WHERE o.COMPARTMENT_ID NOT IN (',
-'        ''ocid1.tenancy.oc1.....'',',
+'        ''ocid1.tenancy.oc1.....''',
 '    )',
 ')',
 'SELECT ',
@@ -39725,7 +39723,7 @@ wwv_flow_imp_shared.create_install_script(
 '	"RAW_RESPONSE" CLOB, ',
 '	"SUMMARY_TEXT" CLOB, ',
 '	"REASONED_MESSAGE" CLOB, ',
-'	"CREATED_ON" TIMESTAMP DEFAULT SYSTIMESTAMP ',
+'	"CREATED_AT" TIMESTAMP DEFAULT SYSTIMESTAMP ',
 '   ) ;',
 '',
 '  CREATE TABLE "AI_CHAT_LOG_REASONING" ',
@@ -39736,7 +39734,7 @@ wwv_flow_imp_shared.create_install_script(
 '	"REPHRASED_OUTPUT" CLOB, ',
 '	"ATTEMPT_NUMBER" NUMBER, ',
 '	"APP_USER" VARCHAR2(255), ',
-'	"CREATED_ON" TIMESTAMP DEFAULT SYSTIMESTAMP ',
+'	"CREATED_AT" TIMESTAMP DEFAULT SYSTIMESTAMP ',
 '   ) ;',
 '',
 '  CREATE INDEX "IDX_FOCUS_REPORTS_OCI_REF" ON "FOCUS_REPORTS_PY" ("OCI_REFERENCENUMBER") ',
@@ -40092,7 +40090,7 @@ unistr('                apex_debug.message(''\2705 Reasoned message: %s'', l_res
 '',
 '                INSERT INTO ai_chat_log_reasoning (',
 '                    chat_id, log_id, input_message, rephrased_output,',
-'                    attempt_number, app_user, created_on',
+'                    attempt_number, app_user, created_at',
 '                ) VALUES (',
 '                    p_chat_id, NULL, l_input_text, l_result_text,',
 '                    v_attempt, p_app_user, SYSTIMESTAMP',
