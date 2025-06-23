@@ -26,7 +26,7 @@ Go to  OCI_FOCUS_REPORTS Workspace -> App Builder -> Workspace Utilities -> Web 
 Client ID or Username -> Client ID
 Client Secret or Password -> secret
 
-
+Edit Page 1, Page Item P1_CURRENCY and modify its default value from USD to the desired default currency (EUR as an example)
 
 Run below script for initial load:
 /home/opc/oci-focus-reports/other_scripts/initial_load.sh
@@ -43,6 +43,8 @@ Install crontab entries:
 
 Login to App -> Edit tables -> Add Subscription Details -> Click on a Subscription and add it to populate the fields. Edit just "Credits Consumed", "Credits Consumed Date" and Order Name.
 Login to App -> Edit tables -> Workloads -> Add Workload -> Select required details and submit. Basically here we create the differenet workloads, environments, customers, sub customers. For cost Analysis we can group compartments together so that it represents a workload or an environment or a customer.
+
+
 
 /*Initial Load:
 Login to VM:

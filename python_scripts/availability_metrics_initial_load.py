@@ -20,7 +20,7 @@ with open(os.path.join(config_dir, f"config.json")) as f:
     config = json.load(f)
 
 regions = config["regions"]
-days_back = "89"
+days_back = 89
 metric_groups = config["metric_groups"]
 app_dir = config["app_dir"]
 log_file_pattern= config["availability_reports_file_name_pattern"]

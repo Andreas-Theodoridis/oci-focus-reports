@@ -3,7 +3,7 @@
 SCRIPT_DIR="/home/opc/oci-focus-reports/python_scripts"
 
 declare -a scripts=(
-    "availability_metrics.py"
+    "availability_metrics_initial_load.py"
     "oci_compartments.py"
     "oci_resources.py"
     "subscriptions.py"

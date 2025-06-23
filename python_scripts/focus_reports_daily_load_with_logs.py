@@ -102,6 +102,14 @@ def preprocess_row(header, row):
             new_row.append(val)
     return new_row
 
+def log_and_execute(cursor, sql, params=None):
+    if params:
+        logging.info(f"➡️ Executing SQL:\n{sql}\nWith params: {params}")
+        cursor.execute(sql, params)
+    else:
+        logging.info(f"➡️ Executing SQL:\n{sql}")
+        cursor.execute(sql)
+
 def merge_csv_into_db(csv_path, connection, batch_size=1000):
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -177,23 +185,30 @@ def download_extract_and_insert():
             object_storage.list_objects,
             namespace_name=rep_namespace,
             bucket_name=rep_bucket,
-            prefix=prefix
+            prefix=prefix,
+            fields='timeCreated'
         )
 
-        if cutoff_time:
-            valid_objects = [
-                obj for obj in report_bucket_objects.data.objects
-                if obj.time_created and obj.time_created.replace(tzinfo=None) >= cutoff_time
-            ]
-        else:
-            valid_objects = report_bucket_objects.data.objects
-
+        valid_objects = []
         for obj in report_bucket_objects.data.objects:
             if obj.time_created is None:
                 logging.warning(f"⚠️ Skipping object without time_created: {obj.name}")
+                continue
+
+            logging.info(f"📦 Found object: {obj.name}, created at {obj.time_created}")
+
+            if not cutoff_time or obj.time_created.replace(tzinfo=None) >= cutoff_time:
+                valid_objects.append(obj)
+            else:
+                logging.info(f"⏩ Skipping object older than cutoff: {obj.name}")
+
+        logging.info(f"✅ Valid objects for processing: {len(valid_objects)}")
+
+
 
         os.environ["TNS_ADMIN"] = wallet_path
         with oracledb.connect(user=db_user, password=db_password, dsn=db_dsn) as conn:
+            conn.cursor().execute("ALTER SESSION DISABLE PARALLEL DML")
             for obj in valid_objects:
                 local_gz_path = os.path.join(dest_path, obj.name)
                 extracted_path = local_gz_path.rstrip(".gz")
@@ -213,10 +228,17 @@ def download_extract_and_insert():
                 os.remove(local_gz_path)
                 merge_csv_into_db(extracted_path, conn)
                 logging.info(f"✅ Finished processing: {extracted_path}")
+                # Post-processing refreshes only once after all files
+            with oracledb.connect(user=db_user, password=db_password, dsn=db_dsn) as final_conn:
+                final_cursor = final_conn.cursor()
+                log_and_execute(final_cursor, "BEGIN PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC; END;")
+                log_and_execute(final_cursor, "BEGIN PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC; END;")
+                log_and_execute(final_cursor, "BEGIN REFRESH_COST_USAGE_TS_PROC; END;")
+                log_and_execute(final_cursor, "BEGIN DBMS_MVIEW.REFRESH('FILTER_VALUES_MV', METHOD => 'C'); END;")
+                final_cursor.close()
 
     except Exception as e:
         logging.error(f"Error processing reports: {str(e)}")
 
 if __name__ == "__main__":
     download_extract_and_insert()
-
