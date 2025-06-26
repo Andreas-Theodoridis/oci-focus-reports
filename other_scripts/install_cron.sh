@@ -30,7 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo -n "📅 Do you want to also install the ADB scale-up job (scale_up_db.sh) in crontab? [y/N]: "
 read -r USER_RESPONSE
 if [[ "$USER_RESPONSE" =~ ^[Yy]$ ]]; then
-    SCALE_UP_CRON_ENTRY="0 8 * * 1-5 $SCRIPT_DIR/scale_up_db.sh >> /home/opc/oci-focus-reports/logs/scale_up.log 2>&1"
+    SCALE_UP_CRON_ENTRY="0 8 * * 1-5 $SCRIPT_DIR/scale_up_db.sh > /home/opc/oci-focus-reports/logs/scale_up.log 2>&1"
     grep -F -- "$SCALE_UP_CRON_ENTRY" "$TEMP_CRON" >/dev/null || echo "$SCALE_UP_CRON_ENTRY" >> "$TEMP_CRON"
     echo "✅ Added scale_up_db.sh to crontab at 08:00 every weekday."
 fi
@@ -39,7 +39,7 @@ fi
 echo -n "📅 Do you want to also install the ADB scale-down job (scale_down_db.sh) in crontab? [y/N]: "
 read -r USER_RESPONSE
 if [[ "$USER_RESPONSE" =~ ^[Yy]$ ]]; then
-    SCALE_DOWN_CRON_ENTRY="0 20 * * * $SCRIPT_DIR/scale_down_db.sh >> /home/opc/oci-focus-reports/logs/scale_down.log 2>&1"
+    SCALE_DOWN_CRON_ENTRY="0 20 * * * $SCRIPT_DIR/scale_down_db.sh > /home/opc/oci-focus-reports/logs/scale_down.log 2>&1"
     grep -F -- "$SCALE_DOWN_CRON_ENTRY" "$TEMP_CRON" >/dev/null || echo "$SCALE_DOWN_CRON_ENTRY" >> "$TEMP_CRON"
     echo "✅ Added scale_down_db.sh to crontab at 20:00 every day."
 fi

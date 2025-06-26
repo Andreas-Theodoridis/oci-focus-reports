@@ -13,8 +13,9 @@ WORKSPACE: OCI_FOCUS_REPORTS
 USERNAME: OCI_FOCUS_REPORTS
 PASSWORD: <<your_password_used_in_terraform_variables>>
 
-Then, select the newly created app (Application 100) => Supporting Objects => Far right menu (Tasks) => Install Supporting Objects
+<!--Then, select the newly created app (Application 100) => Supporting Objects => Far right menu (Tasks) => Install Supporting Objects-->
 
+<!--Optional
 ObserVantage uses OCI's Domain Identity Authentication so you need to alter the credentials inside the APEX App:
 Find OAuth credentials: Login to OCI Console -> Identity & Security -> Domains -> Default domain (under root compartment) 
 Copy from detail -> Domain URL
@@ -25,8 +26,11 @@ Dicsovery URL -> Domain URL/.well-known/openid-configuration
 Go to  OCI_FOCUS_REPORTS Workspace -> App Builder -> Workspace Utilities -> Web Credentials -> OCI OAuth Credentials -> Edit:
 Client ID or Username -> Client ID
 Client Secret or Password -> secret
+-->
 
-Edit Page 1, Page Item P1_CURRENCY and modify its default value from USD to the desired default currency (EUR as an example)
+Install DB objects:
+cd /home/opc/oci-focus-reports/db_scripts
+sqlplus oci_focus_reports@fcradw_high @observantage_ddl.sql
 
 Run below script for initial load:
 /home/opc/oci-focus-reports/other_scripts/initial_load.sh
@@ -36,17 +40,24 @@ Create SQL AI Agent (it may take a few minutes to complete, please check OCI Con
 
 Run once scale_up_db.sh and scale_down_db.sh for scheduled ADW scale up during workday business hours (you need ADW's OCID which you can get from OCI Console)
 /home/opc/oci-focus-reports/other_scripts/scale_up_db.sh
+Wait a couple of minutes for scale up to complete
 /home/opc/oci-focus-reports/other_scripts/scale_down_db.sh
 
 Install crontab entries:
 /home/opc/oci-focus-reports/other_scripts/install_cron.sh
 
+Login to workpasce OCI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment.
+Click on Administration Icon (screenshot) on top left (right to the username) => Manager Users and Group
+    Create Groups: ADMINS, CONTRIBUTORS, READERS
+    Create at least one User and assing it to group ADMINS
+Edit Page 1, Page Item P1_CURRENCY and modify its computation to the desired default currency (EUR as an example) (Screenshot)
 Login to App -> Edit tables -> Add Subscription Details -> Click on a Subscription and add it to populate the fields. Edit just "Credits Consumed", "Credits Consumed Date" and Order Name.
 Login to App -> Edit tables -> Workloads -> Add Workload -> Select required details and submit. Basically here we create the differenet workloads, environments, customers, sub customers. For cost Analysis we can group compartments together so that it represents a workload or an environment or a customer.
 
+Edit Page 2 (OVBot) and edit P2_SQL_AGENT_ID to the OCID of the Endpoint of SQL Agent ID Created (cat /home/opc/gen_ai_agent_endpoint_id.txt or through OCI Console)
+On the same page, edit P2_REGION to the region your GenAI inference endpoint will be used (https://docs.oracle.com/en-us/iaas/Content/generative-ai/overview.htm#regions) and the comparment OCID where ObserVantage deployment is configured
 
-
-/*Initial Load:
+<!--Initial Load:
 Login to VM:
 Edit config.json:
 "use_dynamic_prefix": true -> "use_dynamic_prefix": false
@@ -60,4 +71,4 @@ For OVChat:
 Create Credentials for focus-reports-user => Create API Key
 Go to Workspace Home => Workspace Credentials => Web Credentials => modify ca_user_for_oci and enter details from the API key created above
 Got to App => Page 2 => Pre-Rendering => Before Regions => Computations => P6_SQL_AGENT_ID => Static ID => Enter OCID of the newly created Agent Endpoint: ocid1.genaiagentendpoint.oc1.eu-frankfurt-1.amaaaaaaxnbdvtaa5wk2njppjcqa5lpgcqdsumfwaaozb77lkkjn6pd4e3aa 
-On the same Page => Computations => P2_COMPARTMENT_ID => The compartment ID the AI Agent is created
+On the same Page => Computations => P2_COMPARTMENT_ID => The compartment ID the AI Agent is created-->
