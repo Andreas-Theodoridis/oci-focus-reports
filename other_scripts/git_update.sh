@@ -29,7 +29,20 @@ git show "$BASE:config/config.json" > "$BASE_CONFIG" || {
 cp "$LOCAL_CONFIG" "$MERGE_BACKUP" # backup before merge
 
 # Merge local, base, and updated versions
-git merge-file "$LOCAL_CONFIG" "$BASE_CONFIG" "$REPO_CONFIG"
+echo "🔧 Merging repo and local config.json with jq..."
+MERGED_CONFIG="$REPO_CONFIG.merged"
+
+jq -s '.[0] * .[1]' "$REPO_CONFIG" "$LOCAL_CONFIG" > "$MERGED_CONFIG" || {
+  echo "❌ JSON merge failed"; exit 1;
+}
+
+# Optional: Backup old repo config
+cp "$REPO_CONFIG" "$REPO_CONFIG.bak"
+
+# Replace with merged version
+mv "$MERGED_CONFIG" "$REPO_CONFIG"
+
+echo "✅ JSON merge complete. Merged config saved to $REPO_CONFIG"
 
 # Save result back to repo
 cp "$LOCAL_CONFIG" "$REPO_CONFIG"
