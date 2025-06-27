@@ -17,35 +17,27 @@ git pull origin main
 echo "🧹 Cleaning untracked files..."
 git clean -fdX
 
-echo "♻️ Merging local config.json with repo version..."
-BASE=$(git merge-base HEAD FETCH_HEAD)
-BASE_CONFIG=$(mktemp)
-
-# Ensure base version is found
-git show "$BASE:config/config.json" > "$BASE_CONFIG" || {
-  echo "❌ Could not extract base config.json from Git"; exit 1;
+echo "📄 Backing up local config.json..."
+cp "$LOCAL_CONFIG" "$MERGE_BACKUP" || {
+  echo "❌ Failed to backup local config"; exit 1;
 }
 
-cp "$LOCAL_CONFIG" "$MERGE_BACKUP" # backup before merge
-
-# Merge local, base, and updated versions
 echo "🔧 Merging repo and local config.json with jq..."
-MERGED_CONFIG="$REPO_CONFIG.merged"
+MERGED_CONFIG=$(mktemp)
 
+# Merge: Git version first, then local overrides
 jq -s '.[0] * .[1]' "$REPO_CONFIG" "$LOCAL_CONFIG" > "$MERGED_CONFIG" || {
   echo "❌ JSON merge failed"; exit 1;
 }
 
-# Optional: Backup old repo config
-cp "$REPO_CONFIG" "$REPO_CONFIG.bak"
+echo "💾 Writing merged config to repo..."
+cp "$MERGED_CONFIG" "$REPO_CONFIG"
 
-# Replace with merged version
-mv "$MERGED_CONFIG" "$REPO_CONFIG"
+# OPTIONAL: If you also want to save merged result back to local
+# cp "$MERGED_CONFIG" "$LOCAL_CONFIG"
 
-echo "✅ JSON merge complete. Merged config saved to $REPO_CONFIG"
-
-# Save result back to repo
-cp "$LOCAL_CONFIG" "$REPO_CONFIG"
+echo "🧼 Cleaning up temp file..."
+rm "$MERGED_CONFIG"
 
 # Make bash scripts executable if they exist
 if compgen -G "$REPO_DIR/other_scripts/*.sh" > /dev/null; then
@@ -54,4 +46,4 @@ else
   echo "⚠️ No .sh files found in other_scripts/"
 fi
 
-echo "✅ Update complete. config.json merged to $REPO_CONFIG"
+echo "✅ Update complete. config.json has been merged and saved to $REPO_CONFIG"
