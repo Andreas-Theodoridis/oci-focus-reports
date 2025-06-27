@@ -1,4 +1,6 @@
-# Save backup of local config
+#!/bin/bash
+
+REPO_DIR="/home/opc/oci-focus-reports"
 LOCAL_CONFIG="/home/opc/config.json"
 REPO_CONFIG="$REPO_DIR/config/config.json"
 MERGE_BACKUP="/home/opc/config.json.bak"
@@ -16,20 +18,27 @@ echo "🧹 Cleaning untracked files..."
 git clean -fdX
 
 echo "♻️ Merging local config.json with repo version..."
-
-# Find common ancestor (base version)
 BASE=$(git merge-base HEAD FETCH_HEAD)
 BASE_CONFIG=$(mktemp)
-git show "$BASE:config/config.json" > "$BASE_CONFIG"
 
-# Merge the three versions
-cp "$LOCAL_CONFIG" "$MERGE_BACKUP" # backup
+# Ensure base version is found
+git show "$BASE:config/config.json" > "$BASE_CONFIG" || {
+  echo "❌ Could not extract base config.json from Git"; exit 1;
+}
+
+cp "$LOCAL_CONFIG" "$MERGE_BACKUP" # backup before merge
+
+# Merge local, base, and updated versions
 git merge-file "$LOCAL_CONFIG" "$BASE_CONFIG" "$REPO_CONFIG"
 
-# Save the merged result back to the repo
+# Save result back to repo
 cp "$LOCAL_CONFIG" "$REPO_CONFIG"
 
-# Make scripts executable
-chmod u+x "$REPO_DIR/other_scripts/"*.sh
+# Make bash scripts executable if they exist
+if compgen -G "$REPO_DIR/other_scripts/*.sh" > /dev/null; then
+  chmod u+x "$REPO_DIR/other_scripts/"*.sh
+else
+  echo "⚠️ No .sh files found in other_scripts/"
+fi
 
-echo "✅ Update complete. config.json merged and saved to $CONFIG_REPO_PATH. !!Check config.json for confilcts"
+echo "✅ Update complete. config.json merged to $REPO_CONFIG"
