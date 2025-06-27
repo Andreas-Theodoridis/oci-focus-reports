@@ -15,7 +15,7 @@ from oci.generative_ai.generative_ai_client import GenerativeAiClient
 app_dir = "/home/opc/oci-focus-reports"
 config_dir = os.path.join(app_dir, "config")
 log_dir = os.path.join(app_dir, "logs")
-output_dir = os.path.join(app_dir, "data", "resources")
+output_dir = os.path.join(app_dir, "data", "aimodels")
 
 os.makedirs(log_dir, exist_ok=True)
 os.makedirs(output_dir, exist_ok=True)
@@ -138,7 +138,7 @@ def collect_generative_ai_models():
             response = genai_client.list_models(compartment_id=compartment_ocid)
 
             for model in response.data.items:
-                if not model.capabilities or "CHAT" not in model.capabilities:
+                if set(model.capabilities or []) != {"CHAT"}:
                     continue  # Skip non-chat models
 
                 vendor = (model.vendor or "").lower()
