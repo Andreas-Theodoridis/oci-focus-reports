@@ -44,12 +44,11 @@ CREATE TABLE AI_AGENT_CONFIG (
   ALTER TABLE "OCI_FOCUS_REPORTS"."AI_CHAT_LOG_REASONING" ADD PRIMARY KEY ("ID")
   USING INDEX  ENABLE;
 --------------------------------------------------------
---  DDL for Table COST_USAGE_TIMESERIES
+--  DDL for Table COST_USAGE_TIMESERIES_DAILY
 --------------------------------------------------------
 
-  CREATE TABLE "OCI_FOCUS_REPORTS"."COST_USAGE_TIMESERIES" 
-   (	"DATE_BUCKET" DATE, 
-	"GRANULARITY" VARCHAR2(10) COLLATE "USING_NLS_COMP", 
+  CREATE TABLE "OCI_FOCUS_REPORTS"."COST_USAGE_TIMESERIES_DAILY" 
+   (	"DATE_BUCKET" DATE,
 	"BILLINGACCOUNTID" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
 	"SUBACCOUNTNAME" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
 	"INVOICEISSUER" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
@@ -65,6 +64,61 @@ CREATE TABLE AI_AGENT_CONFIG (
 	"PRICINGUNIT" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
 	"OCI_COMPARTMENTID" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
 	"OCI_COMPARTMENTNAME" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+  "OCI_COMPARTMENT_PATH" VARCHAR2(4000) COLLATE "USING_NLS_COMP",
+	"USAGEUNIT" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
+	"COST" NUMBER(20,6), 
+	"USAGE" NUMBER(20,6), 
+	"LAST_REFRESH" DATE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+--------------------------------------------------------
+--  DDL for Table COST_USAGE_TIMESERIES_WEEKLY
+--------------------------------------------------------
+
+  CREATE TABLE "OCI_FOCUS_REPORTS"."COST_USAGE_TIMESERIES_WEEKLY" 
+   (	"DATE_BUCKET" DATE, 
+	"BILLINGACCOUNTID" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"SUBACCOUNTNAME" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"INVOICEISSUER" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"REGION" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
+	"BILLINGCURRENCY" VARCHAR2(20) COLLATE "USING_NLS_COMP", 
+	"SERVICECATEGORY" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"SERVICENAME" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"CHARGEDESCRIPTION" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+	"RESOURCETYPE" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"RESOURCEID" VARCHAR2(400) COLLATE "USING_NLS_COMP",
+  "RESOURCENAME" VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+	"SKUID" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"PRICINGUNIT" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
+	"OCI_COMPARTMENTID" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+	"OCI_COMPARTMENTNAME" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+  "OCI_COMPARTMENT_PATH" VARCHAR2(4000) COLLATE "USING_NLS_COMP",
+	"USAGEUNIT" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
+	"COST" NUMBER(20,6), 
+	"USAGE" NUMBER(20,6), 
+	"LAST_REFRESH" DATE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+--------------------------------------------------------
+--  DDL for Table COST_USAGE_TIMESERIES_MONTHLY
+--------------------------------------------------------
+
+  CREATE TABLE "OCI_FOCUS_REPORTS"."COST_USAGE_TIMESERIES_MONTHLY" 
+   (	"DATE_BUCKET" DATE, 
+	"BILLINGACCOUNTID" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"SUBACCOUNTNAME" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"INVOICEISSUER" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"REGION" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
+	"BILLINGCURRENCY" VARCHAR2(20) COLLATE "USING_NLS_COMP", 
+	"SERVICECATEGORY" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"SERVICENAME" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"CHARGEDESCRIPTION" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+	"RESOURCETYPE" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"RESOURCEID" VARCHAR2(400) COLLATE "USING_NLS_COMP",
+  "RESOURCENAME" VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+	"SKUID" VARCHAR2(200) COLLATE "USING_NLS_COMP", 
+	"PRICINGUNIT" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
+	"OCI_COMPARTMENTID" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+	"OCI_COMPARTMENTNAME" VARCHAR2(400) COLLATE "USING_NLS_COMP", 
+  "OCI_COMPARTMENT_PATH" VARCHAR2(4000) COLLATE "USING_NLS_COMP",
 	"USAGEUNIT" VARCHAR2(100) COLLATE "USING_NLS_COMP", 
 	"COST" NUMBER(20,6), 
 	"USAGE" NUMBER(20,6), 
@@ -406,160 +460,293 @@ END;
 --------------------------------------------------------
 set define off;
 
-  CREATE OR REPLACE EDITIONABLE PROCEDURE "OCI_FOCUS_REPORTS"."OV_AI_AGENT_PROC" (
-    p_user_message     IN VARCHAR2,
-    p_sql_agent_id     IN VARCHAR2,
-    p_chat_id          IN NUMBER,
-    p_app_user         IN VARCHAR2,
-    p_app_session      IN VARCHAR2,
-    p_region           IN VARCHAR2,
-    p_compartment_id   IN VARCHAR2,
-    p_row_id           OUT ai_chat_log.id%TYPE,
-    p_final_sql        OUT CLOB,
-    p_final_response   OUT CLOB,
-    p_final_aimessage  OUT CLOB
+  CREATE OR REPLACE PROCEDURE OV_AI_CHATBOT_PROC (
+    p_user_message    IN VARCHAR2,
+    p_model_id        IN VARCHAR2,
+    p_chat_id         IN NUMBER,
+    p_app_user        IN VARCHAR2,
+    p_app_session     IN VARCHAR2,
+    p_compartment_id  IN VARCHAR2,
+    p_row_id          OUT ai_chat_log.id%TYPE,
+    p_final_sql       OUT CLOB,
+    p_final_response  OUT CLOB,
+    p_final_aimessage OUT CLOB
 ) AS
-    -- Variables reused across attempts
-    v_attempt              NUMBER := 0;
-    v_max_attempts         CONSTANT NUMBER := 5;
-    v_last_failed          VARCHAR2(1) := 'Y';
-    v_reasoned_message     CLOB;
-    v_reasoning_row_id     NUMBER;
+    v_attempt            NUMBER := 0;
+    v_max_attempts       CONSTANT NUMBER := 5;
+    v_last_failed        VARCHAR2(1) := 'Y';
+    v_reasoned_message   CLOB;
+    v_reasoning_row_id   NUMBER;
+    v_response_sql       CLOB;
+    v_response           CLOB;
+    v_aimessage          CLOB;
+    v_log_row_id         ai_chat_log.id%TYPE;
+    l_input_text         VARCHAR2(4000);
+    l_prompt             CLOB;
+    l_payload            CLOB;
+    l_reasoning_response CLOB;
+    l_response_struct    dbms_cloud_types.resp;
+    l_resp_obj           json_object_t;
+    l_result_text        VARCHAR2(4000);
+    v_summary_text       CLOB;
+    v_summary_prompt     VARCHAR2(4000);
+    l_sql_body           VARCHAR2(32767);
+    l_sql                VARCHAR2(32767);
+    l_cursor             INTEGER;
+    l_desc_tab           dbms_sql.desc_tab;
+    l_col_count          INTEGER;
+    l_value              VARCHAR2(4000);
+    l_has_data           BOOLEAN := FALSE;
+    l_status             INTEGER;
+    l_reasoning_endpoint VARCHAR2(1000);
+    l_instruction        CLOB;
+    l_schema_info        CLOB;
+    l_table_desc         CLOB;
+    l_examples           CLOB;
 
-    -- AI agent vars
-    v_response_sql         CLOB;
-    v_response             CLOB;
-    v_aimessage            CLOB;
-    v_log_row_id           ai_chat_log.id%TYPE;
+    -- New config variables
+    l_region             VARCHAR2(50);
+    l_model_id           VARCHAR2(1000);
+    l_api_format         VARCHAR2(50);
+    l_temperature        NUMBER;
+    l_top_p              NUMBER;
+    l_top_k              NUMBER;
+    l_frequency_penalty  NUMBER;
+    l_presence_penalty   NUMBER;
 
-    -- Reasoning vars
-    l_input_text           VARCHAR2(4000);
-    l_prompt               VARCHAR2(4000);
-    l_payload              CLOB;
-    l_reasoning_response   CLOB;
-    l_response_struct      DBMS_CLOUD_TYPES.resp;
-    l_resp_obj             JSON_OBJECT_T;
-    l_result_text          VARCHAR2(4000);
-
-    -- Summary vars
-    v_summary_text         CLOB;
-    v_summary_prompt       VARCHAR2(4000);
-
-    -- JSON and execution vars
-    l_json_payload         JSON_OBJECT_T;
-    l_outer_obj            JSON_OBJECT_T;
-    l_inner_obj            JSON_OBJECT_T;
-    l_content_obj          JSON_OBJECT_T;
-    l_inner_text           VARCHAR2(32767);
-    l_exec_result          JSON_ARRAY_T;
-    l_sql_body             VARCHAR2(32767);
-    l_sql                  VARCHAR2(32767);
-    l_cursor               INTEGER;
-    l_desc_tab             DBMS_SQL.DESC_TAB;
-    l_col_count            INTEGER;
-    l_value                VARCHAR2(4000);
-    l_has_data             BOOLEAN := FALSE;
-    l_status               INTEGER;
-
-    -- Endpoint URLs
-    l_sql_endpoint         VARCHAR2(1000);
-    l_reasoning_endpoint   VARCHAR2(1000);
 BEGIN
-    apex_debug.message('🔁 Starting ov_ai_agent_proc');
+    apex_debug.message('✨ Starting OV_AI_CHATBOT_PROC_LLAMA');
 
-    l_sql_endpoint := 'https://agent-runtime.generativeai.' || LOWER(p_region) ||
-                      '.oci.oraclecloud.com/20240531/agentEndpoints/' || p_sql_agent_id || '/actions/chat';
-    l_reasoning_endpoint := 'https://inference.generativeai.' || LOWER(p_region) ||
-                            '.oci.oraclecloud.com/20231130/actions/chat';
+    BEGIN
+        SELECT
+            region,
+            model_id,
+            api_format,
+            NVL(temperature, 1),
+            NVL(top_p, 1),
+            NVL(top_k, 1),
+            NVL(frequency_penalty, 0),
+            NVL(presence_penalty, 0)
+        INTO
+            l_region,
+            l_model_id,
+            l_api_format,
+            l_temperature,
+            l_top_p,
+            l_top_k,
+            l_frequency_penalty,
+            l_presence_penalty
+        FROM
+            ai_model_config
+        WHERE model_id = p_model_id;
 
-    apex_debug.message('🔗 Endpoints built. SQL: %s, Reasoning: %s', l_sql_endpoint, l_reasoning_endpoint);
+        l_reasoning_endpoint := 'https://inference.generativeai.'
+                                || LOWER(l_region)
+                                || '.oci.oraclecloud.com/20231130/actions/chat';
+
+        apex_debug.message('📄 GenAI endpoint: %s', l_reasoning_endpoint);
+        apex_debug.message('📦 Model: %s, Format: %s', l_model_id, l_api_format);
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            raise_application_error(-20002, 'No AI model config found for given agent ID.');
+    END;
+    BEGIN
+        SELECT
+            content
+        INTO l_instruction
+        FROM
+            ai_prompt_components
+        WHERE
+            component_type = 'INSTRUCTION';
+
+        SELECT
+            content
+        INTO l_schema_info
+        FROM
+            ai_prompt_components
+        WHERE
+            component_type = 'SCHEMA';
+
+        SELECT
+            content
+        INTO l_table_desc
+        FROM
+            ai_prompt_components
+        WHERE
+            component_type = 'TABLE_DESCRIPTIONS';
+
+        FOR r IN (
+            SELECT
+                user_question,
+                oracle_sql
+            FROM
+                ai_prompt_examples
+            ORDER BY
+                example_order
+        ) LOOP
+            l_examples := l_examples
+                          || 'Q: '
+                          || r.user_question
+                          || chr(10)
+                          || 'A: '
+                          || r.oracle_sql
+                          || chr(10)
+                          || chr(10);
+        END LOOP;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            apex_debug.message('⚠️ Failed loading prompt components: %s', sqlerrm);
+            raise_application_error(-20001, 'Failed to load AI prompt components');
+    END;
 
     LOOP
         v_attempt := v_attempt + 1;
-        apex_debug.message('🔄 Attempt #%s', v_attempt);
-
+        apex_debug.message('⏳ Attempt #%s', v_attempt);
         DECLARE
-            l_input VARCHAR2(32767) := CASE WHEN v_attempt = 1 OR v_reasoned_message IS NULL THEN p_user_message ELSE v_reasoned_message END;
+            l_input VARCHAR2(32767) :=
+                CASE
+                    WHEN v_attempt = 1 OR v_reasoned_message IS NULL THEN
+                        p_user_message
+                    ELSE v_reasoned_message
+                END;
         BEGIN
-            apex_debug.message('🧠 Input message: %s', l_input);
+            apex_debug.message('🔍 Input message: %s', l_input);
+            l_prompt := l_instruction || chr(10) || '-- SCHEMA --' || chr(10) || l_schema_info || chr(10) || '-- TABLES --' || chr(10) || l_table_desc || chr(10) || '-- EXAMPLES --' || chr(10) || l_examples || '-- QUESTION --' || chr(10) || 'Q: ' || l_input || chr(10) || 'A:';
+            IF l_api_format = 'COHERE' THEN
+                l_payload := '{"compartmentId": "' || p_compartment_id || '", 
+                    "servingMode": {
+                        "modelId": "' || l_model_id || '", 
+                        "servingType": "ON_DEMAND"}, 
+                    "chatRequest": {
+                        "apiFormat": "COHERE",
+                        "maxTokens": 2048,
+                        "frequencyPenalty": ' || TO_CHAR(l_frequency_penalty, 'FM9990.00') || ',
+                        "presencePenalty": ' || TO_CHAR(l_presence_penalty, 'FM9990.00') || ',
+                        "temperature": ' || TO_CHAR(l_temperature, 'FM9990.00') || ',
+                        "topP": ' || TO_CHAR(l_top_p, 'FM9990.00') || ',
+                        "topK": ' || TO_CHAR(l_top_k, 'FM9990') || ',
+                        "message": "' || replace(replace(l_prompt, '"', '\"'), chr(10), '\n') || '" 
+                    }
+                }';
+            ELSIF l_api_format = 'GENERIC' THEN
+                l_payload := '{
+                    "compartmentId": "' || p_compartment_id || '",
+                    "servingMode": {
+                        "modelId": "' || l_model_id || '",
+                        "servingType": "ON_DEMAND"
+                    },
+                    "chatRequest": {
+                        "messages": [{
+                            "role": "USER",
+                            "content": [{
+                                "type": "TEXT",
+                                "text": "' || REPLACE(REPLACE(l_prompt, '"', '\"'), CHR(10), '\n') || '"
+                            }]
+                        }],
+                        "apiFormat": "GENERIC",
+                        "maxTokens": 2048,
+                        "temperature": ' || TO_CHAR(l_temperature) || ',
+                        "topP": ' || TO_CHAR(l_top_p, 'FM9990.00') || ',
+                        "topK": ' || TO_CHAR(l_top_k, 'FM9990') || ',
+                        "frequencyPenalty": ' || TO_CHAR(l_frequency_penalty, 'FM9990.00') || ',
+                        "presencePenalty": ' || TO_CHAR(l_presence_penalty, 'FM9990.00') || '
+                    }
+                }';
+            ELSE
+                raise_application_error(-20003, 'Unsupported API format: ' || l_api_format);
+            END IF;
 
-            -- Prepare SQL agent request
-            l_json_payload := JSON_OBJECT_T.parse('{}');
-            l_json_payload.put('userMessage', l_input);
-            l_json_payload.put('context', JSON_OBJECT_T.parse('{}'));
-            l_json_payload.put('isStream', FALSE);
-            l_payload := l_json_payload.to_clob;
+            FOR i IN 0..CEIL(DBMS_LOB.GETLENGTH(l_payload)/4000) - 1 LOOP
+                apex_debug.message('📤 Payload part %s: %s', i+1, DBMS_LOB.SUBSTR(l_payload, 4000, i * 4000 + 1));
+            END LOOP;
+            l_response_struct := dbms_cloud.send_request(credential_name => 'OCI$RESOURCE_PRINCIPAL', uri => l_reasoning_endpoint, method => 'POST', headers => JSON_OBJECT('Content-Type' VALUE 'application/json'), body => utl_raw.cast_to_raw(l_payload));
 
-            apex_debug.message('📤 Sending SQL Agent pa');
+            v_response := dbms_cloud.get_response_text(l_response_struct);
+            apex_debug.message('🤖 GenAI raw SQL response: %s', substr(v_response, 1, 4000));
+            l_resp_obj := json_object_t.parse(v_response);
+            IF l_resp_obj.has('chatResponse') THEN
+                DECLARE
+                    l_chat_response JSON_OBJECT_T := l_resp_obj.get_object('chatResponse');
+                    l_text_raw      CLOB;
+                    l_sql_block     CLOB;
+                    l_start_pos     PLS_INTEGER;
+                    l_end_pos       PLS_INTEGER;
+                BEGIN
+                    -- Try direct path: chatResponse.text
+                    IF l_chat_response.has('text') THEN
+                        BEGIN
+                            l_text_raw := l_chat_response.get_string('text');
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                l_text_raw := NULL; -- Graceful fallback if unexpected type
+                        END;
+                    END IF;
 
-            l_response_struct := DBMS_CLOUD.SEND_REQUEST(
-                credential_name => 'OCI$RESOURCE_PRINCIPAL',
-                uri             => l_sql_endpoint,
-                method          => 'POST',
-                headers         => JSON_OBJECT('Content-Type' VALUE 'application/json'),
-                body            => UTL_RAW.CAST_TO_RAW(l_payload)
-            );
+                    -- If empty, try fallback path: chatResponse.choices[0].message.content[0].text
+                    IF l_text_raw IS NULL OR TRIM(l_text_raw) IS NULL THEN
+                        BEGIN
+                            DECLARE
+                                l_choices_arr  JSON_ARRAY_T;
+                                l_first_choice JSON_OBJECT_T;
+                                l_message_obj  JSON_OBJECT_T;
+                                l_content_arr  JSON_ARRAY_T;
+                                l_text_obj     JSON_OBJECT_T;
+                            BEGIN
+                                l_choices_arr := l_chat_response.get_array('choices');
+                                l_first_choice := TREAT(l_choices_arr.get(0) AS JSON_OBJECT_T);
+                                l_message_obj := TREAT(l_first_choice.get('message') AS JSON_OBJECT_T);
+                                l_content_arr := TREAT(l_message_obj.get('content') AS JSON_ARRAY_T);
+                                l_text_obj := TREAT(l_content_arr.get(0) AS JSON_OBJECT_T);
+                                l_text_raw := l_text_obj.get_string('text');
+                            EXCEPTION
+                                WHEN OTHERS THEN
+                                    apex_debug.message('❌ Could not extract fallback chatResponse.choices path: %s', SQLERRM);
+                                    v_last_failed := 'Y';
+                                    CONTINUE;
+                            END;
+                        END;
+                    END IF;
 
-            v_response := DBMS_CLOUD.GET_RESPONSE_TEXT(l_response_struct);
-            apex_debug.message('📥 SQL Agent raw response: %s', SUBSTR(v_response, 1, 4000));
+                    -- Now extract SQL from l_text_raw
+                    l_start_pos := instr(l_text_raw, '```sql');
+                    IF l_start_pos > 0 THEN
+                        l_text_raw := substr(l_text_raw, l_start_pos + 6); -- Skip past ```sql
+                    END IF;
 
-            IF v_response IS NULL THEN
-                apex_debug.message('❌ SQL Agent returned NULL response.');
+                    l_end_pos := instr(l_text_raw, '```');
+                    IF l_end_pos > 0 THEN
+                        l_sql_block := substr(l_text_raw, 1, l_end_pos - 1);
+                    ELSE
+                        l_sql_block := l_text_raw;
+                    END IF;
+
+                    -- Cleanup
+                    v_response_sql := regexp_replace(trim(l_sql_block), ';[[:space:]]*$', '');
+                    apex_debug.message('✅ Extracted SQL: %s', substr(v_response_sql, 1, 1000));
+                END;
+            ELSE
+                apex_debug.message('❌ chatResponse not found');
                 v_last_failed := 'Y';
                 CONTINUE;
             END IF;
 
-            l_outer_obj := JSON_OBJECT_T.parse(v_response);
-            IF NOT l_outer_obj.has('message') THEN
-                apex_debug.message('❌ SQL Agent response missing "message"');
-                v_last_failed := 'Y';
-                CONTINUE;
-            END IF;
-
-            l_content_obj := l_outer_obj.get_Object('message').get_Object('content');
-            IF l_content_obj IS NULL OR NOT l_content_obj.has('text') THEN
-                apex_debug.message('❌ SQL Agent response missing "content.text"');
-                v_last_failed := 'Y';
-                CONTINUE;
-            END IF;
-
-            l_inner_text := l_content_obj.get_String('text');
-            apex_debug.message('📦 SQL Agent inner text: %s', SUBSTR(l_inner_text, 1, 1000));
-
-            l_inner_obj := JSON_OBJECT_T.parse(l_inner_text);
-            IF NOT l_inner_obj.has('generatedQuery') THEN
-                apex_debug.message('❌ Missing "generatedQuery" in agent response');
-                v_last_failed := 'Y';
-                CONTINUE;
-            END IF;
-
-            v_response_sql := l_inner_obj.get_String('generatedQuery');
-            v_aimessage := CASE 
-                             WHEN l_inner_obj.has('executionResult') THEN l_inner_obj.get_Array('executionResult').to_string 
-                             ELSE '[]' 
-                           END;
-
-            apex_debug.message('✅ SQL received: %s', SUBSTR(v_response_sql, 1, 1000));
-
-            -- Validate SQL
-            l_sql_body := RTRIM(v_response_sql, ';');
-            l_sql := 'SELECT * FROM (' || l_sql_body || ') WHERE ROWNUM = 1';
-
-            apex_debug.message('🔍 Validating SQL: %s', l_sql);
-
-            l_cursor := DBMS_SQL.OPEN_CURSOR;
-            DBMS_SQL.PARSE(l_cursor, l_sql, DBMS_SQL.NATIVE);
-            DBMS_SQL.DESCRIBE_COLUMNS(l_cursor, l_col_count, l_desc_tab);
-
-            FOR i IN 1 .. l_col_count LOOP
-                DBMS_SQL.DEFINE_COLUMN(l_cursor, i, l_value, 4000);
+            -- Validate SQL against DB
+            l_sql_body := rtrim(v_response_sql, ';');
+            l_sql := 'SELECT * FROM ('
+                     || l_sql_body
+                     || ') WHERE ROWNUM = 1';
+            l_cursor := dbms_sql.open_cursor;
+            dbms_sql.parse(l_cursor, l_sql, dbms_sql.native);
+            dbms_sql.describe_columns(l_cursor, l_col_count, l_desc_tab);
+            FOR i IN 1..l_col_count LOOP
+                dbms_sql.define_column(l_cursor, i, l_value, 4000);
             END LOOP;
 
-            l_status := DBMS_SQL.EXECUTE(l_cursor);
-
-            IF DBMS_SQL.FETCH_ROWS(l_cursor) > 0 THEN
-                FOR i IN 1 .. l_col_count LOOP
-                    DBMS_SQL.COLUMN_VALUE(l_cursor, i, l_value);
+            l_status := dbms_sql.execute(l_cursor);
+            IF dbms_sql.fetch_rows(l_cursor) > 0 THEN
+                FOR i IN 1..l_col_count LOOP
+                    dbms_sql.column_value(l_cursor, i, l_value);
                     IF l_value IS NOT NULL THEN
                         l_has_data := TRUE;
                         EXIT;
@@ -567,93 +754,220 @@ BEGIN
                 END LOOP;
             END IF;
 
-            DBMS_SQL.CLOSE_CURSOR(l_cursor);
-
+            dbms_sql.close_cursor(l_cursor);
             IF l_has_data THEN
-                apex_debug.message('✅ SQL validation successful, logging...');
-
+                apex_debug.message('🟢 SQL validation passed. Logging and summarizing.');
                 v_last_failed := 'N';
 
+                -- 🔁 Extract JSON from the SQL results
+                DECLARE
+                    l_json_result CLOB := '[';
+                    l_cnt         INTEGER := 0;
+                BEGIN
+                    l_cursor := dbms_sql.open_cursor;
+                    dbms_sql.parse(l_cursor, 'SELECT * FROM ('
+                                             || v_response_sql
+                                             || ') WHERE ROWNUM <= 50', dbms_sql.native);
+
+                    dbms_sql.describe_columns(l_cursor, l_col_count, l_desc_tab);
+                    FOR i IN 1..l_col_count LOOP
+                        dbms_sql.define_column(l_cursor, i, l_value, 4000);
+                    END LOOP;
+
+                    l_status := dbms_sql.execute(l_cursor);
+                    WHILE dbms_sql.fetch_rows(l_cursor) > 0 LOOP
+                        l_cnt := l_cnt + 1;
+                        l_json_result := l_json_result
+                                         ||
+                            CASE
+                                WHEN l_cnt > 1 THEN
+                                    ','
+                                ELSE ''
+                            END
+                                         || '{';
+
+                        FOR i IN 1..l_col_count LOOP
+                            dbms_sql.column_value(l_cursor, i, l_value);
+                            l_json_result := l_json_result
+                                             || '"'
+                                             || replace(l_desc_tab(i).col_name, '"', '')
+                                             || '":"'
+                                             || replace(l_value, '"', '\"')
+                                             || '"'
+                                             || CASE
+                                WHEN i < l_col_count THEN
+                                    ','
+                                ELSE ''
+                            END;
+
+                        END LOOP;
+
+                        l_json_result := l_json_result || '}';
+                        EXIT WHEN l_cnt >= 50;
+                    END LOOP;
+
+                    l_json_result := l_json_result || ']';
+                    p_final_aimessage := l_json_result;
+                    apex_debug.message('📦 AIMESSAGE: %s', substr(l_json_result, 1, 1000));
+                    dbms_sql.close_cursor(l_cursor);
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        IF dbms_sql.is_open(l_cursor) THEN
+                            dbms_sql.close_cursor(l_cursor);
+                        END IF;
+                        apex_debug.message('⚠️ Failed to build AIMESSAGE JSON: %s', sqlerrm);
+                        p_final_aimessage := '[]';
+                END;
+
+                -- 🔐 Log and summarize
                 INSERT INTO ai_chat_log (
-                    chat_id, app_user, session_id,
-                    user_message, generated_sql, execution_data, raw_response
+                    chat_id,
+                    app_user,
+                    session_id,
+                    user_message,
+                    generated_sql,
+                    execution_data,
+                    raw_response
                 ) VALUES (
-                    p_chat_id, p_app_user, p_app_session,
-                    l_input, v_response_sql, v_aimessage, v_response
+                    p_chat_id,
+                    p_app_user,
+                    p_app_session,
+                    l_input,
+                    v_response_sql,
+                    p_final_aimessage,
+                    v_response
                 ) RETURNING id INTO v_log_row_id;
 
                 UPDATE ai_chat_log_reasoning
-                   SET log_id = v_log_row_id
-                 WHERE chat_id = p_chat_id
-                   AND log_id IS NULL;
+                SET
+                    log_id = v_log_row_id
+                WHERE
+                        chat_id = p_chat_id
+                    AND log_id IS NULL;
 
                 p_row_id := v_log_row_id;
                 p_final_sql := v_response_sql;
-             p_final_response := v_response;
-                p_final_aimessage := v_aimessage;
-                -- Generate Summary via GenAI using final AI message
+                p_final_response := v_response;
+                -- 🧠 Run summarization
                 BEGIN
-                    apex_debug.message('📝 Generating summary using DBMS_CLOUD and GenAI');
+                    v_summary_prompt := 'You are a helpful financial data analyst. Format summaries clearly using these sections:\n- Overview\n- Details\n- Totals\n- Observations\nUse plain text, line breaks, and bullet points. Here is the data to analyze:';
+                    l_input_text := v_summary_prompt
+                                    || chr(10)
+                                    || chr(10)
+                                    || p_final_aimessage;
 
-                    v_summary_prompt := 'You are a helpful financial data analyst. Format summaries clearly using these sections:' || CHR(10) ||
-                                        '- Overview' || CHR(10) ||
-                                        '- Details' || CHR(10) ||
-                                        '- Totals' || CHR(10) ||
-                                        '- Observations' || CHR(10) ||
-                                        'Use plain text, line breaks, and bullet points.' || CHR(10) ||
-                                        'Here is the data to analyze:';
-
-                    l_input_text := v_summary_prompt || CHR(10) || CHR(10) || v_aimessage;
-
-                    apex_debug.message('📤 Summary Input Text: %s', SUBSTR(l_input_text, 1, 4000));
-
-                    l_payload := '{
-                      "compartmentId": "' || p_compartment_id || '",
-                      "servingMode": {
-                        "modelId": "cohere.command-a-03-2025",
-                        "servingType": "ON_DEMAND"
-                      },
-                      "chatRequest": {
-                        "message": "' || REPLACE(REPLACE(l_input_text, '"', '\"'), CHR(10), '\n') || '",
-                        "apiFormat": "COHERE",
-                        "maxTokens": 2048
-                      }
-                    }';
-
-                    apex_debug.message('📤 Summary Payload: %s', SUBSTR(l_payload, 1, 4000));
-
-                    l_response_struct := DBMS_CLOUD.SEND_REQUEST(
-                        credential_name => 'OCI$RESOURCE_PRINCIPAL',
-                        uri             => l_reasoning_endpoint,
-                        method          => 'POST',
-                        headers         => JSON_OBJECT('Content-Type' VALUE 'application/json'),
-                        body            => UTL_RAW.CAST_TO_RAW(l_payload)
-                    );
-
-                    l_reasoning_response := DBMS_CLOUD.GET_RESPONSE_TEXT(l_response_struct);
-                    apex_debug.message('📥 Raw Summary Response: %s', SUBSTR(l_reasoning_response, 1, 4000));
-
-                    l_resp_obj := JSON_OBJECT_T.parse(l_reasoning_response);
-
-                    IF l_resp_obj.has('chatResponse') THEN
-                        v_summary_text := l_resp_obj.get_Object('chatResponse').get_String('text');
-
-                        apex_debug.message('✅ Parsed Summary: %s', SUBSTR(v_summary_text, 1, 4000));
-
-                        UPDATE ai_chat_log
-                          SET summary_text = v_summary_text,
-                              reasoned_message = v_reasoned_message
-                        WHERE id = v_log_row_id;
-
-                        apex_debug.message('🧾 Summary stored in ai_chat_log');
+                    IF l_api_format = 'COHERE' THEN
+                        l_payload := '{
+                            "compartmentId": "' || p_compartment_id || '",
+                            "servingMode": {
+                                "modelId": "' || l_model_id || '", 
+                                "servingType": "ON_DEMAND"}, 
+                            "chatRequest": {
+                                "apiFormat": "COHERE",
+                                "maxTokens": 2048,
+                                "frequencyPenalty": ' || TO_CHAR(l_frequency_penalty, 'FM9990.00') || ',
+                                "presencePenalty": ' || TO_CHAR(l_presence_penalty, 'FM9990.00') || ',
+                                "temperature": ' || TO_CHAR(l_temperature, 'FM9990.00') || ',
+                                "topP": ' || TO_CHAR(l_top_p, 'FM9990.00') || ',
+                                "topK": ' || TO_CHAR(l_top_k, 'FM9990') || ',
+                                "message": "' || replace(replace(l_input_text, '"', '\"'), chr(10), '\n') || '" 
+                            }
+                        }';
+                    ELSIF l_api_format = 'GENERIC' THEN
+                        l_payload := '{
+                            "compartmentId": "' || p_compartment_id || '",
+                            "servingMode": {
+                                "modelId": "' || l_model_id || '",
+                                "servingType": "ON_DEMAND"
+                            },
+                            "chatRequest": {
+                                "messages": [{
+                                    "role": "USER",
+                                    "content": [{
+                                        "type": "TEXT",
+                                        "text": "' || REPLACE(REPLACE(l_input_text, '"', '\"'), CHR(10), '\n') || '"
+                                    }]
+                                }],
+                                "apiFormat": "GENERIC",
+                                "maxTokens": 2048,
+                                "isStream": false,
+                                "numGenerations": 1,
+                                "temperature": ' || TO_CHAR(l_temperature) || ',
+                                "topP": ' || TO_CHAR(l_top_p, 'FM9990.00') || ',
+                                "topK": ' || TO_CHAR(l_top_k, 'FM9990') || ',
+                                "frequencyPenalty": ' || TO_CHAR(l_frequency_penalty, 'FM9990.00') || ',
+                                "presencePenalty": ' || TO_CHAR(l_presence_penalty, 'FM9990.00') || '
+                            }
+                        }';
                     ELSE
-                        apex_debug.message('⚠️ chatResponse not found in response');
+                        raise_application_error(-20004, 'Unsupported API format in summary: ' || l_api_format);
+                    END IF;
+
+                    l_response_struct := dbms_cloud.send_request(credential_name => 'OCI$RESOURCE_PRINCIPAL', uri => l_reasoning_endpoint, method => 'POST', headers => JSON_OBJECT('Content-Type' VALUE 'application/json'), body => utl_raw.cast_to_raw(l_payload));
+                    l_reasoning_response := dbms_cloud.get_response_text(l_response_struct);
+                    l_resp_obj := json_object_t.parse(l_reasoning_response);
+                    IF l_resp_obj.has('chatResponse') THEN
+                        DECLARE
+                            l_chat_response JSON_OBJECT_T := l_resp_obj.get_object('chatResponse');
+                            l_choices_arr   JSON_ARRAY_T;
+                            l_first_choice  JSON_OBJECT_T;
+                            l_message_obj   JSON_OBJECT_T;
+                            l_content_arr   JSON_ARRAY_T;
+                            l_text_obj      JSON_OBJECT_T;
+                        BEGIN
+                            -- Default: NULL
+                            v_summary_text := NULL;
+
+                            -- Try direct path
+                            IF l_chat_response.has('text') THEN
+                                BEGIN
+                                    v_summary_text := l_chat_response.get_string('text');
+                                EXCEPTION
+                                    WHEN OTHERS THEN
+                                        v_summary_text := NULL;
+                                END;
+                            END IF;
+
+                            -- Fallback if text is NULL or empty
+                            IF v_summary_text IS NULL OR TRIM(v_summary_text) IS NULL THEN
+                                BEGIN
+                                    l_choices_arr := l_chat_response.get_array('choices');
+                                    l_first_choice := TREAT(l_choices_arr.get(0) AS JSON_OBJECT_T);
+                                    l_message_obj := TREAT(l_first_choice.get('message') AS JSON_OBJECT_T);
+                                    l_content_arr := TREAT(l_message_obj.get('content') AS JSON_ARRAY_T);
+                                    l_text_obj := TREAT(l_content_arr.get(0) AS JSON_OBJECT_T);
+                                    v_summary_text := l_text_obj.get_string('text');
+                                EXCEPTION
+                                    WHEN OTHERS THEN
+                                        apex_debug.message('❌ Failed to extract summary_text from fallback: %s', SQLERRM);
+                                        v_summary_text := NULL;
+                                END;
+                            END IF;
+
+                            -- ✅ Debug output of the extracted summary text
+                            apex_debug.message('📋 Extracted summary_text: %s', SUBSTR(v_summary_text, 1, 4000));
+
+                            -- Save result if something was found
+                            IF v_summary_text IS NOT NULL THEN
+                                UPDATE ai_chat_log
+                                SET
+                                    summary_text = v_summary_text,
+                                    reasoned_message = v_reasoned_message
+                                WHERE
+                                    id = v_log_row_id;
+
+                                apex_debug.message('📊 Summary stored.');
+                            ELSE
+                                apex_debug.message('⚠️ No summary text found to store.');
+                            END IF;
+                        END;
                     END IF;
 
                 EXCEPTION
                     WHEN OTHERS THEN
-                        apex_debug.message('❌ Summary generation failed: %s', SQLERRM);
+                        apex_debug.message('❗ Summary generation failed: %s', sqlerrm);
                 END;
+
                 EXIT;
             ELSE
                 apex_debug.message('⚠️ SQL produced no results.');
@@ -662,69 +976,129 @@ BEGIN
 
         EXCEPTION
             WHEN OTHERS THEN
-                apex_debug.message('❌ Exception in SQL step: %s', SQLERRM);
-                IF DBMS_SQL.IS_OPEN(l_cursor) THEN
-                    DBMS_SQL.CLOSE_CURSOR(l_cursor);
-                END IF;
-                v_last_failed := 'Y';
+                apex_debug.message('🔥 Exception in GenAI SQL section: %s', sqlerrm);
         END;
 
-        -- Step 2: Run Reasoning
-        IF v_last_failed = 'Y' AND v_attempt < v_max_attempts THEN
-            apex_debug.message('🧠 Triggering reasoning agent');
-
-            l_input_text := NVL(v_reasoned_message, p_user_message);
-
-            l_prompt := 'Rephrase the following business question by replacing informal IT terms (e.g., "RAM") with their corresponding enterprise equivalents (e.g., "memory") that arey used in the database. Preserve the original structure, intent, and meaning of the question. Only substitute terms where necessary and ensure the rephrased question remains as close as possible to the original. Respond only with the rephrased question. No explanation.';
-
-            -- Combine prompt + user input in the message
-            l_input_text := l_prompt || CHR(10) || CHR(10) || l_input_text;
-
-            l_payload := '{
-            "compartmentId": "' || p_compartment_id || '",
-            "servingMode": {
-                "modelId": "cohere.command-a-03-2025",
-                "servingType": "ON_DEMAND"
-            },
-            "chatRequest": {
-                "message": "' || REPLACE(REPLACE(l_input_text, '"', '\"'), CHR(10), '\n') || '",
-                "apiFormat": "COHERE",
-                "maxTokens": 2048
-            }
-            }';
-
-            apex_debug.message('📤 Sending reasoning request');
-
-            l_response_struct := DBMS_CLOUD.SEND_REQUEST(
-                credential_name => 'OCI$RESOURCE_PRINCIPAL',
-                uri             => l_reasoning_endpoint,
-                method          => 'POST',
-                headers         => JSON_OBJECT('Content-Type' VALUE 'application/json'),
-                body            => UTL_RAW.CAST_TO_RAW(l_payload)
-            );
-
-            l_reasoning_response := DBMS_CLOUD.GET_RESPONSE_TEXT(l_response_struct);
-            apex_debug.message('📥 Reasoning raw response: %s', SUBSTR(l_reasoning_response, 1, 4000));
-
-            l_resp_obj := JSON_OBJECT_T.parse(l_reasoning_response);
-
-            IF l_resp_obj.has('chatResponse') THEN
-                l_result_text := l_resp_obj.get_Object('chatResponse').get_String('text');
-                v_reasoned_message := l_result_text;
-
-                apex_debug.message('✅ Reasoned message: %s', l_result_text);
-
-                INSERT INTO ai_chat_log_reasoning (
-                    chat_id, log_id, input_message, rephrased_output,
-                    attempt_number, app_user, created_at
-                ) VALUES (
-                    p_chat_id, NULL, l_input_text, l_result_text,
-                    v_attempt, p_app_user, SYSTIMESTAMP
-                ) RETURNING id INTO v_reasoning_row_id;
+        IF
+            v_last_failed = 'Y'
+            AND v_attempt < v_max_attempts
+        THEN
+            apex_debug.message('♻️ Triggering GenAI rephrasing');
+            l_input_text := nvl(v_reasoned_message, p_user_message);
+            l_prompt := 'Rephrase the following business question by replacing informal IT terms with their corresponding enterprise equivalents used in the database. Preserve the original structure, intent, and meaning. Respond only with the rephrased question.';
+            IF l_api_format = 'COHERE' THEN
+                l_payload := '{
+                    "compartmentId": "' || p_compartment_id || '",
+                    "servingMode": {
+                        "modelId": "' || l_model_id || '",
+                        "servingType": "ON_DEMAND"
+                    },
+                    "chatRequest": {
+                        "apiFormat": "COHERE",
+                        "maxTokens": 2048,
+                        "frequencyPenalty": ' || TO_CHAR(l_frequency_penalty, 'FM9990.00') || ',
+                        "presencePenalty": ' || TO_CHAR(l_presence_penalty, 'FM9990.00') || ',
+                        "temperature": ' || TO_CHAR(l_temperature, 'FM9990.00') || ',
+                        "topP": ' || TO_CHAR(l_top_p, 'FM9990.00') || ',
+                        "topK": ' || TO_CHAR(l_top_k, 'FM9990') || ',
+                        "message": "' || REPLACE(REPLACE(l_prompt || CHR(10) || l_input_text, '"', '\"'), CHR(10), '\n') || '"
+                    }
+                }';
+            ELSIF l_api_format = 'GENERIC' THEN
+                l_payload := '{
+                    "compartmentId": "' || p_compartment_id || '",
+                    "servingMode": {
+                        "modelId": "' || l_model_id || '",
+                        "servingType": "ON_DEMAND"
+                    },
+                    "chatRequest": {
+                        "messages": [{
+                            "role": "USER",
+                            "content": [{
+                                "type": "TEXT",
+                                "text": "' || REPLACE(REPLACE(l_prompt || CHR(10) || l_input_text, '"', '\"'), CHR(10), '\n') || '"
+                            }]
+                        }],
+                        "apiFormat": "GENERIC",
+                        "maxTokens": 2048,
+                        "isStream": false,
+                        "numGenerations": 1,
+                        "temperature": ' || TO_CHAR(l_temperature) || ',
+                        "topP": ' || TO_CHAR(l_top_p, 'FM9990.00') || ',
+                        "topK": ' || TO_CHAR(l_top_k, 'FM9990') || ',
+                        "frequencyPenalty": ' || TO_CHAR(l_frequency_penalty, 'FM9990.00') || ',
+                        "presencePenalty": ' || TO_CHAR(l_presence_penalty, 'FM9990.00') || '
+                    }
+                }';
             ELSE
-                apex_debug.message('❌ Reasoning "chatResponse" not found in response');
-                v_last_failed := 'Y';
+                raise_application_error(-20005, 'Unsupported API format in rephrasing: ' || l_api_format);
             END IF;
+            l_response_struct := dbms_cloud.send_request(credential_name => 'OCI$RESOURCE_PRINCIPAL', uri => l_reasoning_endpoint, method => 'POST', headers => JSON_OBJECT('Content-Type' VALUE 'application/json'), body => utl_raw.cast_to_raw(l_payload));
+            l_reasoning_response := dbms_cloud.get_response_text(l_response_struct);
+            l_resp_obj := json_object_t.parse(l_reasoning_response);
+            IF l_resp_obj.has('chatResponse') THEN
+                DECLARE
+                    l_chat_response   JSON_OBJECT_T := l_resp_obj.get_object('chatResponse');
+                    l_choices_arr     JSON_ARRAY_T;
+                    l_first_choice    JSON_OBJECT_T;
+                    l_message_obj     JSON_OBJECT_T;
+                    l_content_arr     JSON_ARRAY_T;
+                    l_text_obj        JSON_OBJECT_T;
+                    l_result_text     CLOB;
+                BEGIN
+                    -- Try direct chatResponse.text
+                    IF l_chat_response.has('text') THEN
+                        BEGIN
+                            l_result_text := l_chat_response.get_string('text');
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                l_result_text := NULL;
+                        END;
+                    END IF;
+
+                    -- Fallback to choices[0].message.content[0].text
+                    IF l_result_text IS NULL OR TRIM(l_result_text) IS NULL THEN
+                        BEGIN
+                            l_choices_arr := l_chat_response.get_array('choices');
+                            l_first_choice := TREAT(l_choices_arr.get(0) AS JSON_OBJECT_T);
+                            l_message_obj := TREAT(l_first_choice.get('message') AS JSON_OBJECT_T);
+                            l_content_arr := TREAT(l_message_obj.get('content') AS JSON_ARRAY_T);
+                            l_text_obj := TREAT(l_content_arr.get(0) AS JSON_OBJECT_T);
+                            l_result_text := l_text_obj.get_string('text');
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                apex_debug.message('❌ Failed to extract rephrased text from fallback: %s', SQLERRM);
+                                l_result_text := NULL;
+                        END;
+                    END IF;
+
+                    -- Store result
+                    v_reasoned_message := l_result_text;
+
+                    INSERT INTO ai_chat_log_reasoning (
+                        chat_id,
+                        log_id,
+                        input_message,
+                        rephrased_output,
+                        attempt_number,
+                        app_user,
+                        created_at
+                    ) VALUES (
+                        p_chat_id,
+                        NULL,
+                        l_input_text,
+                        l_result_text,
+                        v_attempt,
+                        p_app_user,
+                        SYSTIMESTAMP
+                    ) RETURNING id INTO v_reasoning_row_id;
+
+                    apex_debug.message('📝 Rephrased: %s', l_result_text);
+                END;
+            ELSE
+                apex_debug.message('❌ Rephrasing failed: chatResponse not found');
+            END IF;
+
         ELSE
             EXIT WHEN v_attempt >= v_max_attempts;
         END IF;
@@ -732,12 +1106,13 @@ BEGIN
     END LOOP;
 
     IF v_last_failed = 'Y' THEN
-        apex_debug.message('❌ Final failure after %s attempts', v_attempt);
-        RAISE_APPLICATION_ERROR(-20010, '❌ All AI attempts failed to generate a working SQL query.');
+        apex_debug.message('🛑 Final failure after %s attempts', v_attempt);
+        raise_application_error(-20010, 'All AI attempts failed to generate a working SQL query.');
     END IF;
 
-    apex_debug.message('🎉 Procedure completed successfully');
+    apex_debug.message('✅ Procedure completed');
 END;
+
 
 /
 --------------------------------------------------------
@@ -842,57 +1217,108 @@ END;
 --------------------------------------------------------
 set define off;
 
-  CREATE OR REPLACE PROCEDURE REFRESH_COST_USAGE_TS_PROC AS
+  CREATE OR REPLACE PROCEDURE OCI_FOCUS_REPORTS.REFRESH_COST_USAGE_TS_PROC AS
 BEGIN
-  EXECUTE IMMEDIATE 'TRUNCATE TABLE COST_USAGE_TIMESERIES';
+  -- Truncate all three tables
+  EXECUTE IMMEDIATE 'TRUNCATE TABLE COST_USAGE_TIMESERIES_DAILY';
+  EXECUTE IMMEDIATE 'TRUNCATE TABLE COST_USAGE_TIMESERIES_WEEKLY';
+  EXECUTE IMMEDIATE 'TRUNCATE TABLE COST_USAGE_TIMESERIES_MONTHLY';
 
-  FOR granularity IN (
-    SELECT 'DAY' AS g FROM DUAL
-    UNION ALL SELECT 'WEEK' FROM DUAL
-    UNION ALL SELECT 'MONTH' FROM DUAL
-  ) LOOP
-    INSERT INTO COST_USAGE_TIMESERIES (
-      DATE_BUCKET, GRANULARITY,
-      BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
-      SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
-      SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, USAGEUNIT,
-      COST, USAGE, LAST_REFRESH
-    )
-    SELECT
-      CASE granularity.g
-        WHEN 'DAY' THEN TRUNC(fr.CHARGEPERIODSTART, 'DDD')
-        WHEN 'WEEK' THEN TRUNC(fr.CHARGEPERIODSTART, 'IW')
-        WHEN 'MONTH' THEN TRUNC(fr.CHARGEPERIODSTART, 'MM')
-      END AS DATE_BUCKET,
-      granularity.g,
-      fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
-      NVL(fr.SERVICECATEGORY, 'None'), fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
-      orp.DISPLAY_NAME AS RESOURCENAME,
-      fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, fr.USAGEUNIT,
-      SUM(fr.BILLEDCOST),
-      SUM(
-        CASE
-          WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24)
-          ELSE fr.USAGEQUANTITY / 24
-        END
-      ),
-      SYSDATE
-    FROM FOCUS_REPORTS_PY fr
-    LEFT JOIN OCI_RESOURCES_PY orp
-      ON fr.RESOURCEID = orp.IDENTIFIER
-    WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
-    GROUP BY
-      CASE granularity.g
-        WHEN 'DAY' THEN TRUNC(fr.CHARGEPERIODSTART, 'DDD')
-        WHEN 'WEEK' THEN TRUNC(fr.CHARGEPERIODSTART, 'IW')
-        WHEN 'MONTH' THEN TRUNC(fr.CHARGEPERIODSTART, 'MM')
-      END,
-      fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
-      fr.SERVICECATEGORY, fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
-      orp.DISPLAY_NAME,
-      fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, fr.USAGEUNIT;
-  END LOOP;
+  -- Insert into COST_USAGE_TS_DAY
+  INSERT INTO COST_USAGE_TIMESERIES_DAILY (
+    DATE_BUCKET, BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT,
+    COST, USAGE, LAST_REFRESH
+  )
+  SELECT
+    TRUNC(fr.CHARGEPERIODSTART, 'DDD'),
+    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
+    NVL(fr.SERVICECATEGORY, 'None'), fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
+    orp.DISPLAY_NAME AS RESOURCENAME,
+    fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, ocp.PATH, fr.USAGEUNIT,
+    SUM(fr.BILLEDCOST),
+    SUM(
+      CASE
+        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24)
+        ELSE fr.USAGEQUANTITY / 24
+      END
+    ),
+    SYSDATE
+  FROM FOCUS_REPORTS_PY fr
+  LEFT JOIN OCI_RESOURCES_PY orp ON fr.RESOURCEID = orp.IDENTIFIER
+  LEFT JOIN OCI_COMPARTMENTS_PY ocp ON fr.OCI_COMPARTMENTID = ocp.COMPARTMENT_ID
+  WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
+  GROUP BY
+    TRUNC(fr.CHARGEPERIODSTART, 'DDD'),
+    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
+    fr.SERVICECATEGORY, fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
+    orp.DISPLAY_NAME, fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME,
+    ocp.PATH, fr.USAGEUNIT;
 
+  -- Repeat for WEEK
+  INSERT INTO COST_USAGE_TIMESERIES_WEEKLY (
+    DATE_BUCKET, BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT,
+    COST, USAGE, LAST_REFRESH
+  )
+  SELECT
+    TRUNC(fr.CHARGEPERIODSTART, 'IW'),
+    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
+    NVL(fr.SERVICECATEGORY, 'None'), fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
+    orp.DISPLAY_NAME AS RESOURCENAME,
+    fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, ocp.PATH, fr.USAGEUNIT,
+    SUM(fr.BILLEDCOST),
+    SUM(
+      CASE
+        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24)
+        ELSE fr.USAGEQUANTITY / 24
+      END
+    ),
+    SYSDATE
+  FROM FOCUS_REPORTS_PY fr
+  LEFT JOIN OCI_RESOURCES_PY orp ON fr.RESOURCEID = orp.IDENTIFIER
+  LEFT JOIN OCI_COMPARTMENTS_PY ocp ON fr.OCI_COMPARTMENTID = ocp.COMPARTMENT_ID
+  WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
+  GROUP BY
+    TRUNC(fr.CHARGEPERIODSTART, 'IW'),     
+    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
+    fr.SERVICECATEGORY, fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
+    orp.DISPLAY_NAME, fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME,
+    ocp.PATH, fr.USAGEUNIT;
+
+  -- Repeat for MONTH
+  INSERT INTO COST_USAGE_TIMESERIES_MONTHLY (
+    DATE_BUCKET, BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT,
+    COST, USAGE, LAST_REFRESH
+  )
+  SELECT
+    TRUNC(fr.CHARGEPERIODSTART, 'MM'), 
+    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
+    NVL(fr.SERVICECATEGORY, 'None'), fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
+    orp.DISPLAY_NAME AS RESOURCENAME,
+    fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, ocp.PATH, fr.USAGEUNIT,
+    SUM(fr.BILLEDCOST),
+    SUM(
+      CASE
+        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24)
+        ELSE fr.USAGEQUANTITY / 24
+      END
+    ),
+    SYSDATE
+  FROM FOCUS_REPORTS_PY fr
+  LEFT JOIN OCI_RESOURCES_PY orp ON fr.RESOURCEID = orp.IDENTIFIER
+  LEFT JOIN OCI_COMPARTMENTS_PY ocp ON fr.OCI_COMPARTMENTID = ocp.COMPARTMENT_ID
+  WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
+  GROUP BY
+    TRUNC(fr.CHARGEPERIODSTART, 'MM'),     
+    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
+    fr.SERVICECATEGORY, fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
+    orp.DISPLAY_NAME, fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME,
+    ocp.PATH, fr.USAGEUNIT;
   COMMIT;
 END;
 
