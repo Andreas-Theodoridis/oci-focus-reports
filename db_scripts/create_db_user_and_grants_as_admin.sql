@@ -1,3 +1,42 @@
+CREATE USER "OCI_FOCUS_REPORTS" DEFAULT COLLATION "USING_NLS_COMP" 
+   DEFAULT TABLESPACE "DATA"
+   TEMPORARY TABLESPACE "TEMP"
+   IDENTIFIED BY &1;
+ALTER USER "OCI_FOCUS_REPORTS" QUOTA UNLIMITED ON "DATA";
+GRANT "CONNECT" TO "OCI_FOCUS_REPORTS";
+GRANT "RESOURCE" TO "OCI_FOCUS_REPORTS";
+GRANT "DATAPUMP_CLOUD_EXP" TO "OCI_FOCUS_REPORTS";
+GRANT "DATAPUMP_CLOUD_IMP" TO "OCI_FOCUS_REPORTS";
+GRANT "DWROLE" TO "OCI_FOCUS_REPORTS";
+GRANT "CONSOLE_DEVELOPER" TO "OCI_FOCUS_REPORTS";
+GRANT "OML_DEVELOPER" TO "OCI_FOCUS_REPORTS";
+GRANT EXECUTE ON "DBMS_CLOUD_PIPELINE" TO "OCI_FOCUS_REPORTS";
+GRANT EXECUTE ON "DBMS_CLOUD_AI" TO "OCI_FOCUS_REPORTS";
+GRANT EXECUTE ON "DBMS_CLOUD" TO "OCI_FOCUS_REPORTS";
+GRANT EXECUTE ON DBMS_RESULT_CACHE TO OCI_FOCUS_REPORTS;
+-- ADD ROLES
+ALTER USER OCI_FOCUS_REPORTS DEFAULT ROLE CONSOLE_DEVELOPER,DWROLE,OML_DEVELOPER,CONNECT,RESOURCE;
+-- REST ENABLE
+BEGIN
+    ORDS_ADMIN.ENABLE_SCHEMA(
+        p_enabled => TRUE,
+        p_schema => 'OCI_FOCUS_REPORTS',
+        p_url_mapping_type => 'BASE_PATH',
+        p_url_mapping_pattern => 'oci_focus_reports',
+        p_auto_rest_auth=> FALSE
+    );
+    -- ENABLE DATA SHARING
+    C##ADP$SERVICE.DBMS_SHARE.ENABLE_SCHEMA(
+            SCHEMA_NAME => 'OCI_FOCUS_REPORTS',
+            ENABLED => TRUE
+    );
+    commit;
+END;
+/
+ALTER PROFILE "DEFAULT"
+    LIMIT 
+         PASSWORD_LIFE_TIME UNLIMITED;
+
 EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE','IMPLEMENT');
 EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA','OCI_FOCUS_REPORTS', TRUE);
 EXEC DBMS_CLOUD_ADMIN.DISABLE_RESOURCE_PRINCIPAL();
@@ -6,6 +45,7 @@ EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL(username => 'OCI_FOCUS_REPORTS')
 EXEC DBMS_CLOUD_ADMIN.DISABLE_RESOURCE_PRINCIPAL();
 EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL();
 EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL(username => 'OCI_FOCUS_REPORTS');
+GRANT EXECUTE ON "ADMIN"."OCI$RESOURCE_PRINCIPAL" TO "OCI_FOCUS_REPORTS";
 BEGIN
   -- Create the scheduler job.
   DBMS_SCHEDULER.CREATE_JOB (
@@ -27,33 +67,6 @@ BEGIN
     enabled           => TRUE,          -- The job is enabled and will run.
     comments          => 'Gather statistics for the OCI_FOCUS_REPORTS schema.'
   );
-
-  -- Optional:  Grant execute privilege on the job to another user.  Remove this if not needed.
-  -- Replace 'OTHER_USER' with the username to grant privileges to.
-  -- DBMS_SCHEDULER.GRANT_PRIVILEGE (
-  --  privilege   => 'EXECUTE',
-  --  grantee     => 'OCI_FOCUS_REPORTS',
-  --  grantor     => 'ADMIN',  --  The owner of the job.  If created in another schema, change this.
-  --  object_name => 'GATHER_OCI_FOCUS_REPORTS_STATS'
-  --);
-
-
-  -- Optional:  Set job class attributes.  Useful for resource management.
-  -- DBMS_SCHEDULER.SET_JOB_CLASS_ATTRIBUTE (
-  --   job_class_name  => 'YOUR_JOB_CLASS',
-  --   attribute       => 'RESOURCE_CONSUMER_GROUP',
-  --   value           => 'MY_RESOURCE_GROUP'
-  -- );
-
-  -- Optional:  Create a job class.
-  -- DBMS_SCHEDULER.CREATE_JOB_CLASS (
-  --    job_class_name          =>  'YOUR_JOB_CLASS',
-  --    resource_consumer_group =>  'MY_RESOURCE_GROUP',
-  --    service                 =>  'your_service_name',
-  --    logging_level           =>  DBMS_SCHEDULER.LOGGING_FULL
-  -- );
-
-
   COMMIT;
   DBMS_OUTPUT.PUT_LINE('Scheduler job "GATHER_OCI_FOCUS_REPORTS_STATS" created and enabled.');
 

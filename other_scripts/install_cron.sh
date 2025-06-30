@@ -14,6 +14,7 @@ CRON_ENTRIES=$(cat <<'EOF'
 0 2 * * * /usr/bin/python /home/opc/oci-focus-reports/python_scripts/oci_compartments.py >> /home/opc/oci-focus-reports/logs/gsis_comps_daily_crontab.log 2>&1
 0 3 * * * /usr/bin/python /home/opc/oci-focus-reports/python_scripts/compress_old_focus_report_csv.py >> /home/opc/oci-focus-reports/logs/compress_old_focus_report_csv.log 2>&1
 0 4 * * * /usr/bin/python /home/opc/oci-focus-reports/python_scripts/oci_resources.py >> /home/opc/oci-focus-reports/logs/gsis_resources.log 2>&1
+0 4 * * * /usr/bin/python /home/opc/oci-focus-reports/python_scripts/oci_aimodels.py >> /home/opc/oci-focus-reports/logs/oci_ai_models.log 2>&1
 #30 4 * * * /usr/bin/python /home/opc/oci-focus-reports/python_scripts/oci_exa_maintenance_details.py >> /home/opc/oci-focus-reports/logs/oci_exa_maintenance_details.log 2>&1
 EOF
 )
