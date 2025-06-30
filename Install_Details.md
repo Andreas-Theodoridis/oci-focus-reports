@@ -7,6 +7,7 @@ Once completed successfully, relogin to vm!
 Go to directory:
 cd /home/opc/oci-focus-reports/db_scripts
 And install create_apex_workspace.sql => sqlplus admin@fcradw_high @create_apex_workspace.sql
+Install OCI_FOCUS_REPORTS db objects: sqlplus oci_focus_reports@fcradw_high @install_ov_db_objects.sql
 When APEX workspace is installed, install app => sqlplus oci_focus_reports@fcradw_high @install_observantage_app.sql
 Once application is installed, login to APEX workspace:
 WORKSPACE: OCI_FOCUS_REPORTS
