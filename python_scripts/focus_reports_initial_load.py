@@ -205,6 +205,7 @@ def download_extract_and_insert():
                 log_and_execute(final_cursor, "BEGIN PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC; END;")
                 log_and_execute(final_cursor, "BEGIN PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC; END;")
                 log_and_execute(final_cursor, "BEGIN REFRESH_COST_USAGE_TS_PROC; END;")
+                log_and_execute(final_cursor, "REFRESH_CREDIT_USAGE_AGG_PROC; END;")
                 log_and_execute(final_cursor, "BEGIN DBMS_MVIEW.REFRESH('FILTER_VALUES_MV', METHOD => 'C'); END;")
                 final_conn.commit()
                 final_cursor.close()
