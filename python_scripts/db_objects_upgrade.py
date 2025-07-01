@@ -82,7 +82,7 @@ def main():
         db_user = db_conf["user"]
         db_pass = get_secret_value(db_conf["pass_secret_ocid"], signer)
         db_dsn = db_conf["dsn"]
-        
+
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
     defined_tables = extract_table_ddls(sql_text)
@@ -94,10 +94,16 @@ def main():
 
     for table_name, ddl in defined_tables.items():
         db_ddl = get_existing_ddl(cursor, table_name)
+
         if db_ddl is None:
             logging.info(f"➕ Table {table_name}: Not found in DB → SHOULD CREATE")
+            print(f"\n--- {table_name} (MISSING IN DB) ---")
+            print(ddl)
         elif not compare_ddl(ddl, db_ddl):
             logging.warning(f"✏️ Table {table_name}: Differs from DB → SHOULD ALTER")
+            print(f"\n--- {table_name} (DIFFERENCE FOUND) ---")
+            print("▶️ Script DDL:\n", ddl)
+            print("\n🔁 DB DDL:\n", db_ddl)
         else:
             logging.info(f"✅ Table {table_name}: Matches")
 
