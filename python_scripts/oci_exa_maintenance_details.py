@@ -7,6 +7,7 @@ import fnmatch
 import shutil
 import gzip
 import logging
+import base64
 from datetime import datetime, timedelta, timezone
 
 app_dir = "/home/opc/oci-focus-reports"
@@ -174,7 +175,12 @@ def format_date(date_value):
     elif isinstance(date_value, datetime):
         return date_value.strftime('%d-%b-%Y %-I:%M:%S %p')  # Use %#I for Windows
     return None
-    
+
+def get_secret_value(secret_ocid, signer):
+    secrets_client = oci.secrets.SecretsClient({}, signer=signer)
+    bundle = secrets_client.get_secret_bundle(secret_id=secret_ocid)
+    base64_secret = bundle.data.secret_bundle_content.content
+    return base64.b64decode(base64_secret).decode("utf-8")    
 
 def flatten_run_details(item):
     details = getattr(item, 'maintenance_run_details', {})
@@ -248,6 +254,17 @@ else:
 # 4. Upload CSV to Oracle DB using oracledb
 # -----------------------------------------
 if all_data:
+    # Handle credentials
+    if use_test_creds:
+        db_user = config["test_credentials"]["user"]
+        db_pass = config["test_credentials"]["password"]
+        db_dsn = config["test_credentials"]["dsn"]
+    else:
+        signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+        db_user = config["db_credentials"]["user"]
+        db_pass = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer=signer)
+        db_dsn = config["db_credentials"]["dsn"]
+
     os.environ['TNS_ADMIN'] = wallet_path
     conn = oracledb.connect(
         user=db_user,
@@ -256,7 +273,7 @@ if all_data:
     )
     cursor = conn.cursor()
 
-    # Create table if not exists
+    # Column definitions (for placeholder generation)
     column_defs = ",\n".join([
         "id VARCHAR2(1000)",
         "compartment_id VARCHAR2(1000)",
@@ -302,11 +319,11 @@ if all_data:
         logging.error(f"❌ Failed to truncate table {exa_maintenance_metrics_table}: {e}")
         raise
 
-    # Ensure only the expected columns are included
+    # Prepare rows and insert
     with open(csv_file, "r") as f:
         reader = csv.DictReader(f)
-        rows = [tuple(row.values()) for row in reader]
-    
+        rows = [tuple(row[col] for col in reader.fieldnames) for row in reader]
+
     columns = [desc.split()[0] for desc in column_defs.split(",\n")]
     placeholders = ",".join([f":{i+1}" for i in range(len(columns))])
     insert_sql = f"INSERT INTO {exa_maintenance_metrics_table} ({','.join(columns)}) VALUES ({placeholders})"
@@ -314,5 +331,3 @@ if all_data:
     conn.commit()
 
     logging.info(f"\n📥 Uploaded {len(rows)} rows to table {exa_maintenance_metrics_table}.")
-
-

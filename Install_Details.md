@@ -42,12 +42,35 @@ Install crontab entries:
 /home/opc/oci-focus-reports/other_scripts/install_cron.sh
 
 Login to workpasce OCI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment.
-Click on Administration Icon (screenshot) on top left (right to the username) => Manager Users and Group
+For APEX Authentication:
+Click on Administration Icon (screenshot) on top right (right to the username) => Manage Users and Group
     Create Groups: ADMINS, CONTRIBUTORS, READERS
     Create at least one User and assing it to group ADMINS
-Edit Page 1, Page Item P1_CURRENCY and modify its computation to the desired default currency (EUR as an example) (Screenshot)
-Login to App -> Edit tables -> Add Subscription Details -> Click on a Subscription and add it to populate the fields. Edit just "Credits Consumed", "Credits Consumed Date" and Order Name.
+
+Fof OCI IAM Domains SSO Authentication:
+Login to OCI Console -> Identity & Security -> Domains -> Default Domain(Under root Compartment) -> Integrated Application -> OAuth configuration -> Make a note of "Client ID" and "Secret". On the same page click "Edit OAuth configuration" => Redirect URL: https://<<adw_url>/ords/apex_authentication.callback and Post-logout redirect URL: https://<<adw_url>/ords/f?p=100 
+Also make a note of the OCI IAM Domain URL in OCI Console -> Identity & Security -> Domains -> Default Domain -> Details -> "Domain URL"
+
+Login to APEX app OCI_FOCUS_REPORTS => https://<<adw_url>>/ords/r/apex => CI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment
+Click on "Workspace Utilities" => "Web Credentials" and edit OCI OAuth Credentials (Client ID & Secret) with the values taken above.
+Then from "App Builder" => Select "Focus Cost Reporting" => "Shared Components" => "Authentication Schemes" => "OCI IAM OAuth" and edit "Discrovery URL" with the URL taken above + Click on "Make Current Scheme" button.
+Back to "Shared Components" => "Authorization Schemes" => "Administration Rights" => Edit "Scheme Type" => "Exists SQL Query" => SQL Query =>
+select 1 from APEX_WORKSPACE_SESSION_GROUPS
+where apex_session_id = :app_session
+and group_name in ('CA_APEX_ADMINS')
+Same for "Contribution Rights" but with different SQL:
+select 1 from APEX_WORKSPACE_SESSION_GROUPS
+where apex_session_id = :app_session
+and group_name in ('CA_APEX_ADMINS')
+
+
+
+
+
+<!--Edit Page 1, Page Item P1_CURRENCY and modify its computation to the desired default currency (EUR as an example) (Screenshot)-->
+Login to App -> Edit tables -> Edit "Current Active Orders" -> For each order row, update Order Name and give it a friendly name -> Save
 Login to App -> Edit tables -> Workloads -> Add Workload -> Select required details and submit. Basically here we create the differenet workloads, environments, customers, sub customers. For cost Analysis we can group compartments together so that it represents a workload or an environment or a customer.
+Once all workloads are added, click on "Refresh DB Tables"
 
 Edit Page 2 (OVBot) and edit P2_SQL_AGENT_ID to the OCID of the Endpoint of SQL Agent ID Created (cat /home/opc/gen_ai_agent_endpoint_id.txt or through OCI Console)
 On the same page, edit P2_REGION to the region your GenAI inference endpoint will be used (https://docs.oracle.com/en-us/iaas/Content/generative-ai/overview.htm#regions) and the comparment OCID where ObserVantage deployment is configured
@@ -67,3 +90,24 @@ Create Credentials for focus-reports-user => Create API Key
 Go to Workspace Home => Workspace Credentials => Web Credentials => modify ca_user_for_oci and enter details from the API key created above
 Got to App => Page 2 => Pre-Rendering => Before Regions => Computations => P6_SQL_AGENT_ID => Static ID => Enter OCID of the newly created Agent Endpoint: ocid1.genaiagentendpoint.oc1.eu-frankfurt-1.amaaaaaaxnbdvtaa5wk2njppjcqa5lpgcqdsumfwaaozb77lkkjn6pd4e3aa 
 On the same Page => Computations => P2_COMPARTMENT_ID => The compartment ID the AI Agent is created-->
+
+
+Cross tenancy policies for Parent - Child organizations (required to get child compartments)
+On Parent tenancy, root compartment, define policy like:
+define tenancy CHILD as ocid1.tenancy.oc1..123
+endorse dynamic-group focus-reports-DG to read all-resources in tenancy CHILD
+On Child tenancy, root compartment, define policy like:
+define tenancy PARENT as ocid1.tenancy.oc1..123
+define dynamic-group focus-reports-DG as ocid1.dynamicgroup.oc1..123 (OCID of dynamic group in PARENT tenancy)
+admit dynamic-group focus-reports-DG of tenancy PARENT to read all-resources in tenancy
+
+Then manually create as copy new oci_compartments.py under /home/opc/oci-focus-reports/python_scripts (for example child_compartments.py)
+Edit child_compartments.py line 29:
+From:
+compartment_ocid = config["comp_ocid"]
+To:
+compartment_ocid = "ocid1.tenancy.oc1..aaaaaaaaqr55dbhrptqbdzghhochnmaarikn6h2chep53nugzd5tygphvemq"
+
+Run it manually and add it in crontab:
+crontab -e
+30 2 * * * /usr/bin/python /home/opc/oci-focus-reports/python_scripts/child_compartments.py >> /home/opc/oci-focus-reports/logs/child_comps_daily_crontab.log 2>&1
