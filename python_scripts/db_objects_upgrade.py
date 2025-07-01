@@ -48,11 +48,15 @@ def extract_table_ddls(sql_text):
 # === Fetch existing DB DDL using DBMS_METADATA ===
 def get_existing_ddl(cursor, table_name):
     try:
-        # Set transform params to strip physical options
-        cursor.callproc("DBMS_METADATA.SET_TRANSFORM_PARAM", ['SESSION_TRANSFORM', 'STORAGE', False])
-        cursor.callproc("DBMS_METADATA.SET_TRANSFORM_PARAM", ['SESSION_TRANSFORM', 'TABLESPACE', False])
-        cursor.callproc("DBMS_METADATA.SET_TRANSFORM_PARAM", ['SESSION_TRANSFORM', 'SEGMENT_ATTRIBUTES', False])
-        cursor.callproc("DBMS_METADATA.SET_TRANSFORM_PARAM", ['SESSION_TRANSFORM', 'SQLTERMINATOR', True])
+        plsql = """
+        BEGIN
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', FALSE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', FALSE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', FALSE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SQLTERMINATOR', TRUE);
+        END;
+        """
+        cursor.execute(plsql)
 
         cursor.execute("SELECT DBMS_METADATA.GET_DDL('TABLE', :1, :2) FROM DUAL", [table_name, target_schema])
         result = cursor.fetchone()
