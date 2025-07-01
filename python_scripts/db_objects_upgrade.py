@@ -61,8 +61,28 @@ def compare_ddl(script_ddl, db_ddl):
     clean = lambda s: re.sub(r'\s+', ' ', s).strip().lower()
     return clean(script_ddl) == clean(db_ddl)
 
+def get_secret_value(secret_ocid, signer):
+    import oci
+    secrets_client = oci.secrets.SecretsClient({}, signer=signer)
+    bundle = secrets_client.get_secret_bundle(secret_id=secret_ocid)
+    base64_secret = bundle.data.secret_bundle_content.content
+    return base64.b64decode(base64_secret).decode("utf-8")
+
 # === Main ===
 def main():
+    import oci
+    signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+
+    if config.get("use_test_credentials", False):
+        db_user = config["test_credentials"]["user"]
+        db_pass = config["test_credentials"]["password"]
+        db_dsn = config["test_credentials"]["dsn"]
+    else:
+        db_conf = config["db_credentials"]
+        db_user = db_conf["user"]
+        db_pass = get_secret_value(db_conf["pass_secret_ocid"], signer)
+        db_dsn = db_conf["dsn"]
+        
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
     defined_tables = extract_table_ddls(sql_text)
