@@ -54,6 +54,7 @@ def get_existing_ddl(cursor, table_name):
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', FALSE);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', FALSE);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SQLTERMINATOR', TRUE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'CONSTRAINTS', FALSE);  -- 🔥 exclude inline PKs
         END;
         """
         cursor.execute(plsql)
@@ -63,7 +64,29 @@ def get_existing_ddl(cursor, table_name):
         if result and result[0]:
             return result[0].read()
     except Exception as e:
-        logging.warning(f"⚠️ Could not get DDL for {table_name}: {e}")
+        logging.warning(f"⚠️ Could not get table DDL for {table_name}: {e}")
+    return None
+
+def get_primary_key_ddl(cursor, table_name):
+    try:
+        cursor.execute("""
+            SELECT constraint_name
+            FROM all_constraints
+            WHERE table_name = :1 AND owner = :2 AND constraint_type = 'P'
+        """, [table_name.upper(), target_schema])
+
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        constraint_name = row[0]
+
+        cursor.execute("SELECT DBMS_METADATA.GET_DDL('CONSTRAINT', :1, :2) FROM DUAL", [constraint_name, target_schema])
+        result = cursor.fetchone()
+        if result and result[0]:
+            return result[0].read()
+    except Exception as e:
+        logging.warning(f"⚠️ Could not get PK constraint DDL for {table_name}: {e}")
     return None
 
 # === Compare two DDL strings (normalized) ===
@@ -104,18 +127,39 @@ def main():
 
     for table_name, ddl in defined_tables.items():
         db_ddl = get_existing_ddl(cursor, table_name)
+        db_pk_ddl = get_primary_key_ddl(cursor, table_name)
 
         if db_ddl is None:
             logging.info(f"➕ Table {table_name}: Not found in DB → SHOULD CREATE")
             print(f"\n--- {table_name} (MISSING IN DB) ---")
             print(ddl)
-        elif not compare_ddl(ddl, db_ddl):
-            logging.warning(f"✏️ Table {table_name}: Differs from DB → SHOULD ALTER")
-            print(f"\n--- {table_name} (DIFFERENCE FOUND) ---")
+            continue
+
+        # Compare table body
+        if not compare_ddl(ddl, db_ddl):
+            logging.warning(f"✏️ Table {table_name}: Table body differs → SHOULD ALTER")
+            print(f"\n--- {table_name} (TABLE BODY DIFFERENT) ---")
             print("▶️ Script DDL:\n", ddl)
             print("\n🔁 DB DDL:\n", db_ddl)
         else:
-            logging.info(f"✅ Table {table_name}: Matches")
+            logging.info(f"✅ Table {table_name}: Body matches")
+
+        # Compare PK if present
+        script_pk_regex = re.search(rf'ALTER TABLE.*{table_name}.*ADD PRIMARY KEY.*?;', sql_text, re.IGNORECASE | re.DOTALL)
+        script_pk_ddl = script_pk_regex.group(0) if script_pk_regex else None
+
+        if db_pk_ddl and script_pk_ddl:
+            if not compare_ddl(script_pk_ddl, db_pk_ddl):
+                logging.warning(f"✏️ Table {table_name}: Primary key differs → SHOULD ALTER")
+                print(f"\n--- {table_name} (PK DIFFERENT) ---")
+                print("▶️ Script PK DDL:\n", script_pk_ddl)
+                print("\n🔁 DB PK DDL:\n", db_pk_ddl)
+            else:
+                logging.info(f"✅ Table {table_name}: Primary key matches")
+        elif db_pk_ddl and not script_pk_ddl:
+            logging.warning(f"⚠️ Table {table_name}: PK exists in DB but missing in script")
+        elif script_pk_ddl and not db_pk_ddl:
+            logging.warning(f"➕ Table {table_name}: PK in script but missing in DB")
 
     cursor.close()
     conn.close()
