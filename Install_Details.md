@@ -30,15 +30,8 @@ Client ID or Username -> Client ID
 Client Secret or Password -> secret
 -->
 
-Install DB objects:
-cd /home/opc/oci-focus-reports/db_scripts
-sqlplus oci_focus_reports@fcradw_high @observantage_ddl.sql
-
 Run below script for initial load:
 /home/opc/oci-focus-reports/other_scripts/initial_load.sh
-
-Create SQL AI Agent (it may take a few minutes to complete, please check OCI Console):
-/home/opc/oci-focus-reports/other_scripts/create_ai_sql_agent.sh
 
 Run once scale_up_db.sh and scale_down_db.sh for scheduled ADW scale up during workday business hours (you need ADW's OCID which you can get from OCI Console)
 /home/opc/oci-focus-reports/other_scripts/scale_up_db.sh
