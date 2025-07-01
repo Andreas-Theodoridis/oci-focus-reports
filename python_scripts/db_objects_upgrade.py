@@ -124,19 +124,6 @@ def main():
         script_pk_regex = re.search(rf'ALTER TABLE.*{table_name}.*ADD PRIMARY KEY.*?;', sql_text, re.IGNORECASE | re.DOTALL)
         script_pk_ddl = script_pk_regex.group(0) if script_pk_regex else None
 
-        if db_pk_ddl and script_pk_ddl:
-            if not compare_ddl(script_pk_ddl, db_pk_ddl):
-                logging.warning(f"✏️ Table {table_name}: Primary key differs → SHOULD ALTER")
-                print(f"\n--- {table_name} (PK DIFFERENT) ---")
-                print("▶️ Script PK DDL:\n", script_pk_ddl)
-                print("\n🔁 DB PK DDL:\n", db_pk_ddl)
-            else:
-                logging.info(f"✅ Table {table_name}: Primary key matches")
-        elif db_pk_ddl and not script_pk_ddl:
-            logging.warning(f"⚠️ Table {table_name}: PK exists in DB but missing in script")
-        elif script_pk_ddl and not db_pk_ddl:
-            logging.warning(f"➕ Table {table_name}: PK in script but missing in DB")
-
     cursor.close()
     conn.close()
     logging.info("✅ Comparison completed.")
