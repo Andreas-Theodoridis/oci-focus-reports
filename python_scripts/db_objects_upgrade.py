@@ -66,28 +66,6 @@ def get_existing_ddl(cursor, table_name):
         logging.warning(f"⚠️ Could not get table DDL for {table_name}: {e}")
     return None
 
-def get_primary_key_ddl(cursor, table_name):
-    try:
-        cursor.execute("""
-            SELECT constraint_name
-            FROM all_constraints
-            WHERE table_name = :1 AND owner = :2 AND constraint_type = 'P'
-        """, [table_name.upper(), target_schema])
-
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        constraint_name = row[0]
-
-        cursor.execute("SELECT DBMS_METADATA.GET_DDL('CONSTRAINT', :1, :2) FROM DUAL", [constraint_name, target_schema])
-        result = cursor.fetchone()
-        if result and result[0]:
-            return result[0].read()
-    except Exception as e:
-        logging.warning(f"⚠️ Could not get PK constraint DDL for {table_name}: {e}")
-    return None
-
 # === Compare two DDL strings (normalized) ===
 def compare_ddl(script_ddl, db_ddl):
     clean = lambda s: re.sub(r'\s+', ' ', s).strip().lower()
@@ -126,7 +104,6 @@ def main():
 
     for table_name, ddl in defined_tables.items():
         db_ddl = get_existing_ddl(cursor, table_name)
-        db_pk_ddl = get_primary_key_ddl(cursor, table_name)
 
         if db_ddl is None:
             logging.info(f"➕ Table {table_name}: Not found in DB → SHOULD CREATE")
