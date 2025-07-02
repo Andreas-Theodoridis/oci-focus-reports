@@ -215,6 +215,7 @@ def main():
             for stmt in stmts:
                 patch_file.write(f"{stmt}\n")
 
+    patch_file.write("COMMIT;\nEXIT;\n")
     patch_file.close()
     cursor.close()
     conn.close()
