@@ -35,58 +35,26 @@ logging.info("🚀 Starting DB object comparison...")
 # === Initialize Oracle Client ===
 oracledb.init_oracle_client(lib_dir=oracle_client_dir)
 
-# === Extract CREATE TABLE DDLs ===
-def extract_table_ddls(sql_text):
-    table_ddls = {}
-    pattern = re.compile(r'CREATE TABLE\s+"([^"]+)"\."([^"]+)"\s*\((.*?)\)\s*DEFAULT COLLATION.*?;', re.DOTALL | re.IGNORECASE)
+# === Extract CREATE statements ===
+def extract_object_ddls(sql_text, object_type):
+    ddl_map = {}
+    pattern = re.compile(rf'CREATE (?:OR REPLACE )?{object_type}\s+"[^"]+"\."([^"]+)".*?;', re.DOTALL | re.IGNORECASE)
     for match in pattern.finditer(sql_text):
-        schema, table, cols = match.groups()
-        ddl = match.group(0)
-        table_ddls[table.upper()] = ddl.strip()
-    return table_ddls
+        obj_name = match.group(1).upper()
+        ddl_map[obj_name] = match.group(0).strip()
+    return ddl_map
 
-# === Extract CREATE INDEX DDLs ===
-def extract_index_ddls(sql_text):
-    index_ddls = {}
-    pattern = re.compile(r'CREATE INDEX\s+"[^"]+"\."([^"]+)"\s+ON\s+.*?;', re.DOTALL | re.IGNORECASE)
-    for match in pattern.finditer(sql_text):
-        index_name = match.group(1).upper()
-        ddl = match.group(0).strip()
-        index_ddls[index_name] = ddl
-    return index_ddls
+def get_secret_value(secret_ocid, signer):
+    import oci
+    secrets_client = oci.secrets.SecretsClient({}, signer=signer)
+    bundle = secrets_client.get_secret_bundle(secret_id=secret_ocid)
+    base64_secret = bundle.data.secret_bundle_content.content
+    return base64.b64decode(base64_secret).decode("utf-8")
 
-# === Extract CREATE MATERIALIZED VIEW DDLs ===
-def extract_mv_ddls(sql_text):
-    mv_ddls = {}
-    pattern = re.compile(r'CREATE MATERIALIZED VIEW\s+"[^"]+"\."([^"]+)"\s+.*?;', re.DOTALL | re.IGNORECASE)
-    for match in pattern.finditer(sql_text):
-        mv_name = match.group(1).upper()
-        ddl = match.group(0).strip()
-        mv_ddls[mv_name] = ddl
-    return mv_ddls
+def compare_ddl(script_ddl, db_ddl):
+    clean = lambda s: re.sub(r'\s+', ' ', s).strip().lower()
+    return clean(script_ddl) == clean(db_ddl)
 
-# === Fetch existing DB DDL using DBMS_METADATA ===
-def get_existing_ddl(cursor, table_name):
-    try:
-        plsql = """
-        BEGIN
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', FALSE);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', FALSE);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', FALSE);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SQLTERMINATOR', TRUE);
-        END;
-        """
-        cursor.execute(plsql)
-
-        cursor.execute("SELECT DBMS_METADATA.GET_DDL('TABLE', :1, :2) FROM DUAL", [table_name, target_schema])
-        result = cursor.fetchone()
-        if result and result[0]:
-            return result[0].read()
-    except Exception as e:
-        logging.warning(f"⚠️ Could not get table DDL for {table_name}: {e}")
-    return None
-
-# === Fetch existing DB Object DDL using DBMS_METADATA ===
 def get_object_ddl(cursor, object_type, object_name):
     try:
         cursor.execute("""
@@ -104,19 +72,49 @@ def get_object_ddl(cursor, object_type, object_name):
         logging.warning(f"⚠️ Could not get {object_type} DDL for {object_name}: {e}")
     return None
 
-# === Compare two DDL strings (normalized) ===
-def compare_ddl(script_ddl, db_ddl):
-    clean = lambda s: re.sub(r'\s+', ' ', s).strip().lower()
-    return clean(script_ddl) == clean(db_ddl)
+def get_table_columns(cursor, table_name):
+    query = """
+    SELECT column_name, data_type, data_length, data_precision, data_scale, nullable
+    FROM all_tab_columns
+    WHERE table_name = :1 AND owner = :2
+    """
+    cursor.execute(query, [table_name.upper(), target_schema.upper()])
+    return {row[0].upper(): row[1:] for row in cursor.fetchall()}
 
-def get_secret_value(secret_ocid, signer):
-    import oci
-    secrets_client = oci.secrets.SecretsClient({}, signer=signer)
-    bundle = secrets_client.get_secret_bundle(secret_id=secret_ocid)
-    base64_secret = bundle.data.secret_bundle_content.content
-    return base64.b64decode(base64_secret).decode("utf-8")
+def parse_columns_from_script(ddl):
+    inside = ddl.split("(", 1)[1].rsplit(")", 1)[0]
+    lines = [line.strip() for line in inside.split(',')]
+    columns = {}
+    for line in lines:
+        if re.match(r'^(CONSTRAINT|PRIMARY|UNIQUE|FOREIGN|CHECK|PARTITION|USING|ENABLE|DISABLE)', line, re.IGNORECASE):
+            continue
+        match = re.match(r'^"([^"]+)"\s+(.+)', line)
+        if match:
+            col = match.group(1).strip()
+            col_def = match.group(2).strip()
+            columns[col.upper()] = col_def
+    return columns
 
-# === Main ===
+def extract_procedure_ddls(sql_text):
+    pattern = re.compile(r'CREATE(?: OR REPLACE)? PROCEDURE\s+.*?END\s*;', re.DOTALL | re.IGNORECASE)
+    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
+
+def extract_function_ddls(sql_text):
+    pattern = re.compile(r'CREATE(?: OR REPLACE)? FUNCTION\s+.*?END\s*;', re.DOTALL | re.IGNORECASE)
+    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
+
+def extract_insert_statements(sql_text, target_tables):
+    inserts = {tbl: [] for tbl in target_tables}
+    pattern = re.compile(r'(INSERT\s+INTO\s+(?:"[^"]+"\.)?"?([A-Z0-9_]+)"?\s+.*?;)', re.DOTALL | re.IGNORECASE)
+
+    for match in pattern.finditer(sql_text):
+        full_stmt, table_name = match.groups()
+        table_upper = table_name.upper()
+        if table_upper in inserts:
+            inserts[table_upper].append(full_stmt.strip())
+
+    return inserts
+
 def main():
     import oci
     signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
@@ -134,75 +132,113 @@ def main():
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
 
-    defined_tables = extract_table_ddls(sql_text)
-    defined_indexes = extract_index_ddls(sql_text)
-    defined_mvs = extract_mv_ddls(sql_text)
+    tables = extract_object_ddls(sql_text, "TABLE")
+    indexes = extract_object_ddls(sql_text, "INDEX")
+    mvs = extract_object_ddls(sql_text, "MATERIALIZED VIEW")
+    views = extract_object_ddls(sql_text, "VIEW")
+    procedures = extract_object_ddls(sql_text, "PROCEDURE")
+    functions = extract_object_ddls(sql_text, "FUNCTION")
 
-    logging.info(f"📋 Found {len(defined_tables)} tables in SQL script.")
-    logging.info(f"📌 Found {len(defined_indexes)} indexes in SQL script.")
-    logging.info(f"📦 Found {len(defined_mvs)} materialized views in SQL script.")
+    patch_path = os.path.join(app_dir, "db_scripts", "patch.sql")
+    patch_file = open(patch_path, "w")
 
     os.environ['TNS_ADMIN'] = wallet_path
     conn = oracledb.connect(user=db_user, password=db_pass, dsn=db_dsn)
     cursor = conn.cursor()
 
-    # === Compare Tables ===
-    for table_name, ddl in defined_tables.items():
-        db_ddl = get_existing_ddl(cursor, table_name)
+    cursor.execute("""
+    SELECT object_name, object_type FROM all_objects
+    WHERE owner = :1 AND object_type IN ('TABLE', 'INDEX', 'MATERIALIZED VIEW', 'VIEW', 'PROCEDURE', 'FUNCTION')
+    """, [target_schema])
+    existing_objects = {(row[0].upper(), row[1].upper()) for row in cursor.fetchall()}
 
-        if db_ddl is None:
-            logging.info(f"➕ Table {table_name}: Not found in DB → SHOULD CREATE")
-            print(f"\n--- {table_name} (MISSING IN DB) ---")
-            print(ddl)
+    # === Tables ===
+    for table_name, ddl in tables.items():
+        if (table_name, 'TABLE') not in existing_objects:
+            patch_file.write(ddl + "\n")
             continue
+        db_columns = get_table_columns(cursor, table_name)
+        script_columns = parse_columns_from_script(ddl)
+        for col, col_def in script_columns.items():
+            if col not in db_columns:
+                patch_file.write(f'ALTER TABLE "{target_schema}"."{table_name}" ADD ({col} {col_def});\n')
+            else:
+                db_type = db_columns[col][0]
+                if 'VARCHAR2' in col_def.upper():
+                    match = re.search(r'VARCHAR2\((\d+)\)', col_def.upper())
+                    if match:
+                        script_len = int(match.group(1))
+                        db_len = db_columns[col][1] or 0
+                        if script_len > db_len:
+                            patch_file.write(f'ALTER TABLE "{target_schema}"."{table_name}" MODIFY ({col} {col_def});\n')
 
-        if not compare_ddl(ddl, db_ddl):
-            logging.warning(f"✏️ Table {table_name}: Table body differs → SHOULD ALTER")
-            print(f"\n--- {table_name} (TABLE BODY DIFFERENT) ---")
-            print("▶️ Script DDL:\n", ddl)
-            print("\n🔁 DB DDL:\n", db_ddl)
-        else:
-            logging.info(f"✅ Table {table_name}: Body matches")
-
-    # === Compare Indexes ===
-    for index_name, ddl in defined_indexes.items():
+    # === Indexes ===
+    for index_name, ddl in indexes.items():
         db_ddl = get_object_ddl(cursor, "INDEX", index_name)
+        if db_ddl is None or not compare_ddl(ddl, db_ddl):
+            patch_file.write(f'DROP INDEX "{target_schema}"."{index_name}";\n{ddl}\n')
 
-        if db_ddl is None:
-            logging.info(f"➕ Index {index_name}: Not found in DB → SHOULD CREATE")
-            print(f"\n--- INDEX {index_name} (MISSING IN DB) ---")
-            print(ddl)
-            continue
-
-        if not compare_ddl(ddl, db_ddl):
-            logging.warning(f"✏️ Index {index_name}: Differs → SHOULD DROP & RECREATE")
-            print(f"\n--- INDEX {index_name} (DIFFERENCE FOUND) ---")
-            print("▶️ Script DDL:\n", ddl)
-            print("\n🔁 DB DDL:\n", db_ddl)
-        else:
-            logging.info(f"✅ Index {index_name}: Matches")
-
-    # === Compare Materialized Views ===
-    for mv_name, ddl in defined_mvs.items():
+    # === Materialized Views ===
+    for mv_name, ddl in mvs.items():
         db_ddl = get_object_ddl(cursor, "MATERIALIZED_VIEW", mv_name)
+        if db_ddl is None or not compare_ddl(ddl, db_ddl):
+            patch_file.write(f'DROP MATERIALIZED VIEW "{target_schema}"."{mv_name}";\n{ddl}\n')
 
-        if db_ddl is None:
-            logging.info(f"➕ MV {mv_name}: Not found in DB → SHOULD CREATE")
-            print(f"\n--- MV {mv_name} (MISSING IN DB) ---")
-            print(ddl)
-            continue
+    # === Procedures & Functions ===
+    procedures = extract_procedure_ddls(sql_text)
+    functions = extract_function_ddls(sql_text)
 
-        if not compare_ddl(ddl, db_ddl):
-            logging.warning(f"✏️ MV {mv_name}: Differs → SHOULD DROP & RECREATE")
-            print(f"\n--- MV {mv_name} (DIFFERENCE FOUND) ---")
-            print("▶️ Script DDL:\n", ddl)
-            print("\n🔁 DB DDL:\n", db_ddl)
-        else:
-            logging.info(f"✅ MV {mv_name}: Matches")
+    for proc in procedures:
+        patch_file.write(f"{proc}\n/\n\n")
 
+    for func in functions:
+        patch_file.write(f"{func}\n/\n\n")
+
+    # === Update AI Config Tables ===
+
+    target_insert_tables = ["AI_PROMPT_COMPONENTS", "AI_PROMPT_EXAMPLES"]
+    inserts = extract_insert_statements(sql_text, target_insert_tables)
+
+    for table, statements in inserts.items():
+        if statements:
+            patch_file.write(f"TRUNCATE TABLE \"{target_schema}\".\"{table}\";\n")
+            for stmt in statements:
+                patch_file.write(f"{stmt}\n")
+            patch_file.write("\n")
+
+    patch_file.close()
     cursor.close()
     conn.close()
-    logging.info("✅ Comparison completed.")
+    logging.info("✅ Patch generation complete.")
+    print("\n🚀 Patch file created: db_scripts/patch.sql")
+
+    # Prompt to execute patch.sql
+    user_input = input("❓ Do you want to update database now? (y/N): ").strip().lower()
+    if user_input == 'y':
+        import subprocess
+
+        sqlplus_cmd = f'sqlplus -s {db_user}/{db_pass}@{db_dsn} @{os.path.join(app_dir, "db_scripts", "patch.sql")}'
+
+        print("\n▶️ Executing patch.sql...\n")
+        try:
+            result = subprocess.run(sqlplus_cmd, shell=True, check=True, text=True, capture_output=True)
+            print("✅ Patch executed successfully.")
+            print(result.stdout)
+        except subprocess.CalledProcessError as e:
+            print("❌ Error while executing patch.sql:")
+            print(e.stderr)
+    # Prompt to execute install_ov_apex_app.sql
+    user_input = input("❓ Do you want to update APEX app now? (y/N): ").strip().lower()
+    if user_input == 'y':
+        sqlplus_cmd = f'sqlplus -s {db_user}/{db_pass}@{db_dsn} @{os.path.join(app_dir, "db_scripts", "install_ov_apex_app.sql")}'
+        print("\n▶️ Executing install_ov_apex_app.sql...\n")
+        try:
+            result = subprocess.run(sqlplus_cmd, shell=True, check=True, text=True, capture_output=True)
+            print("✅ install_ov_apex_app.sql executed successfully.\n")
+            print(result.stdout)
+        except subprocess.CalledProcessError as e:
+            print("❌ Error while executing install_ov_apex_app.sql:")
+            print(e.stderr)
 
 if __name__ == "__main__":
     main()
