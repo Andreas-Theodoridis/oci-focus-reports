@@ -5,6 +5,7 @@ import base64
 import logging
 import oracledb
 from datetime import datetime
+import subprocess
 
 # === Load config ===
 app_dir = "/home/opc/oci-focus-reports"
@@ -25,17 +26,23 @@ log_dir = os.path.join(app_dir, "logs")
 os.makedirs(log_dir, exist_ok=True)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_file = os.path.join(log_dir, f"compare_db_objects_{timestamp}.log")
+
+# File + console logging
 logging.basicConfig(
-    filename=log_file,
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
 )
+
 logging.info("🚀 Starting DB object comparison...")
 
 # === Initialize Oracle Client ===
 oracledb.init_oracle_client(lib_dir=oracle_client_dir)
 
-# === Extract CREATE statements ===
+# === Utility functions ===
 def extract_object_ddls(sql_text, object_type):
     ddl_map = {}
     pattern = re.compile(rf'CREATE (?:OR REPLACE )?{object_type}\s+"[^"]+"\."([^"]+)".*?;', re.DOTALL | re.IGNORECASE)
@@ -106,15 +113,25 @@ def extract_function_ddls(sql_text):
 def extract_insert_statements(sql_text, target_tables):
     inserts = {tbl: [] for tbl in target_tables}
     pattern = re.compile(r'(INSERT\s+INTO\s+(?:"[^"]+"\.)?"?([A-Z0-9_]+)"?\s+.*?;)', re.DOTALL | re.IGNORECASE)
-
     for match in pattern.finditer(sql_text):
         full_stmt, table_name = match.groups()
         table_upper = table_name.upper()
         if table_upper in inserts:
             inserts[table_upper].append(full_stmt.strip())
-
     return inserts
 
+def execute_sql_script(script_path, user, password, dsn, description):
+    logging.info(f"▶️ Executing {description}...")
+    sqlplus_cmd = f'sqlplus -s {user}/{password}@{dsn} @{script_path}'
+    try:
+        result = subprocess.run(sqlplus_cmd, shell=True, check=True, text=True, capture_output=True)
+        logging.info(f"✅ {description} executed successfully.")
+        logging.info(result.stdout)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"❌ Error while executing {description}:")
+        logging.error(e.stderr)
+
+# === Main ===
 def main():
     import oci
     signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
@@ -136,8 +153,6 @@ def main():
     indexes = extract_object_ddls(sql_text, "INDEX")
     mvs = extract_object_ddls(sql_text, "MATERIALIZED VIEW")
     views = extract_object_ddls(sql_text, "VIEW")
-    procedures = extract_object_ddls(sql_text, "PROCEDURE")
-    functions = extract_object_ddls(sql_text, "FUNCTION")
 
     patch_path = os.path.join(app_dir, "db_scripts", "patch.sql")
     patch_file = open(patch_path, "w")
@@ -148,7 +163,7 @@ def main():
 
     cursor.execute("""
     SELECT object_name, object_type FROM all_objects
-    WHERE owner = :1 AND object_type IN ('TABLE', 'INDEX', 'MATERIALIZED VIEW', 'VIEW', 'PROCEDURE', 'FUNCTION')
+    WHERE owner = :1 AND object_type IN ('TABLE', 'INDEX', 'MATERIALIZED VIEW', 'VIEW')
     """, [target_schema])
     existing_objects = {(row[0].upper(), row[1].upper()) for row in cursor.fetchall()}
 
@@ -185,60 +200,34 @@ def main():
             patch_file.write(f'DROP MATERIALIZED VIEW "{target_schema}"."{mv_name}";\n{ddl}\n')
 
     # === Procedures & Functions ===
-    procedures = extract_procedure_ddls(sql_text)
-    functions = extract_function_ddls(sql_text)
-
-    for proc in procedures:
+    for proc in extract_procedure_ddls(sql_text):
         patch_file.write(f"{proc}\n/\n\n")
 
-    for func in functions:
+    for func in extract_function_ddls(sql_text):
         patch_file.write(f"{func}\n/\n\n")
 
-    # === Update AI Config Tables ===
-
+    # === Inserts for AI tables ===
     target_insert_tables = ["AI_PROMPT_COMPONENTS", "AI_PROMPT_EXAMPLES"]
     inserts = extract_insert_statements(sql_text, target_insert_tables)
-
-    for table, statements in inserts.items():
-        if statements:
-            patch_file.write(f"TRUNCATE TABLE \"{target_schema}\".\"{table}\";\n")
-            for stmt in statements:
+    for table, stmts in inserts.items():
+        if stmts:
+            patch_file.write(f'TRUNCATE TABLE "{target_schema}"."{table}";\n')
+            for stmt in stmts:
                 patch_file.write(f"{stmt}\n")
-            patch_file.write("\n")
 
     patch_file.close()
     cursor.close()
     conn.close()
-    logging.info("✅ Patch generation complete.")
-    print("\n🚀 Patch file created: db_scripts/patch.sql")
+    logging.info("✅ Patch file written to db_scripts/patch.sql")
 
-    # Prompt to execute patch.sql
-    user_input = input("❓ Do you want to update database now? (y/N): ").strip().lower()
-    if user_input == 'y':
-        import subprocess
+    # === Execute patch.sql if user agrees ===
+    if input("❓ Do you want to apply patch.sql to the database? (y/N): ").strip().lower() == 'y':
+        execute_sql_script(patch_path, db_user, db_pass, db_dsn, "patch.sql")
 
-        sqlplus_cmd = f'sqlplus -s {db_user}/{db_pass}@{db_dsn} @{os.path.join(app_dir, "db_scripts", "patch.sql")}'
-
-        print("\n▶️ Executing patch.sql...\n")
-        try:
-            result = subprocess.run(sqlplus_cmd, shell=True, check=True, text=True, capture_output=True)
-            print("✅ Patch executed successfully.")
-            print(result.stdout)
-        except subprocess.CalledProcessError as e:
-            print("❌ Error while executing patch.sql:")
-            print(e.stderr)
-    # Prompt to execute install_ov_apex_app.sql
-    user_input = input("❓ Do you want to update APEX app now? (y/N): ").strip().lower()
-    if user_input == 'y':
-        sqlplus_cmd = f'sqlplus -s {db_user}/{db_pass}@{db_dsn} @{os.path.join(app_dir, "db_scripts", "install_ov_apex_app.sql")}'
-        print("\n▶️ Executing install_ov_apex_app.sql...\n")
-        try:
-            result = subprocess.run(sqlplus_cmd, shell=True, check=True, text=True, capture_output=True)
-            print("✅ install_ov_apex_app.sql executed successfully.\n")
-            print(result.stdout)
-        except subprocess.CalledProcessError as e:
-            print("❌ Error while executing install_ov_apex_app.sql:")
-            print(e.stderr)
+    # === Execute install_ov_apex_app.sql if user agrees ===
+    apex_path = os.path.join(app_dir, "db_scripts", "install_ov_apex_app.sql")
+    if input("❓ Do you want to install/update APEX app? (y/N): ").strip().lower() == 'y':
+        execute_sql_script(apex_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
 
 if __name__ == "__main__":
     main()
