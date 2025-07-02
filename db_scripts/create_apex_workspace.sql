@@ -134,7 +134,7 @@ prompt  Creating Users...
 begin
 wwv_flow_fnd_user_api.create_fnd_user (
   p_user_id                      => '8403525156288561',
-  p_user_name                    => 'ADMIN',
+  p_user_name                    => 'OVADMIN',
   p_first_name                   => '',
   p_last_name                    => '',
   p_description                  => '',
