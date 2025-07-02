@@ -103,12 +103,18 @@ def parse_columns_from_script(ddl):
     return columns
 
 def extract_procedure_ddls(sql_text):
-    pattern = re.compile(r'CREATE(?: OR REPLACE)? PROCEDURE\s+.*?END\s*;', re.DOTALL | re.IGNORECASE)
-    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
+    pattern = re.compile(
+        r'(CREATE(?: OR REPLACE)? PROCEDURE\b.*?^\s*/\s*$)',
+        re.DOTALL | re.IGNORECASE | re.MULTILINE
+    )
+    return [match.group(1).strip() for match in pattern.finditer(sql_text)]
 
 def extract_function_ddls(sql_text):
-    pattern = re.compile(r'CREATE(?: OR REPLACE)? FUNCTION\s+.*?END\s*;', re.DOTALL | re.IGNORECASE)
-    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
+    pattern = re.compile(
+        r'(CREATE(?: OR REPLACE)? FUNCTION\b.*?^\s*/\s*$)',
+        re.DOTALL | re.IGNORECASE | re.MULTILINE
+    )
+    return [match.group(1).strip() for match in pattern.finditer(sql_text)]
 
 def extract_insert_statements(sql_text, target_tables):
     inserts = {tbl: [] for tbl in target_tables}
