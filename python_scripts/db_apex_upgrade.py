@@ -118,12 +118,20 @@ def extract_function_ddls(sql_text):
 
 def extract_insert_statements(sql_text, target_tables):
     inserts = {tbl: [] for tbl in target_tables}
-    pattern = re.compile(r'(INSERT\s+INTO\s+(?:"[^"]+"\.)?"?([A-Z0-9_]+)"?\s+.*?;)', re.DOTALL | re.IGNORECASE)
+    
+    # Matches full INSERT INTO ... VALUES (...) ending in );
+    # Allows for quoted content with semicolons and multiline support
+    pattern = re.compile(
+        r'(INSERT\s+INTO\s+(?:"[^"]+"\.)?"?([A-Z0-9_]+)"?\s*\(.*?\)\s*VALUES\s*\(.*?\)\s*;?)',
+        re.DOTALL | re.IGNORECASE
+    )
+
     for match in pattern.finditer(sql_text):
         full_stmt, table_name = match.groups()
         table_upper = table_name.upper()
         if table_upper in inserts:
             inserts[table_upper].append(full_stmt.strip())
+
     return inserts
 
 def execute_sql_script(script_path, user, password, dsn, description):
