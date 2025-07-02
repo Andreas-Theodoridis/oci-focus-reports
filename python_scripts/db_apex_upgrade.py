@@ -241,6 +241,21 @@ def main():
             for stmt in stmts:
                 patch_file.write(f"{stmt}\n")
 
+    # === Execute selected procedures at the end ===
+    procedures_to_run = [
+        "PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC",
+        "PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC",
+        "REFRESH_COST_USAGE_TS_PROC",
+        "REFRESH_CREDIT_USAGE_AGG_PROC",
+        "REFRESH_CREDIT_CONSUMPTION_STATE_PROC",
+        "UPDATE_OCI_SUBSCRIPTION_DETAILS"
+    ]
+
+    patch_file.write("-- Execute procedures\n")
+    for proc in procedures_to_run:
+        patch_file.write(f"BEGIN {proc}; END;\n/\n")
+    patch_file.write("\n")
+
     patch_file.write("COMMIT;\nEXIT;\n")
     patch_file.close()
     cursor.close()

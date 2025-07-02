@@ -75,6 +75,10 @@ def get_secret_value(secret_ocid, signer):
     base64_secret = bundle.data.secret_bundle_content.content
     return base64.b64decode(base64_secret).decode("utf-8")
 
+def log_and_execute(cursor, sql):
+    logging.info(f"➡️ Executing SQL:\n{sql}")
+    cursor.execute(sql)
+
 def get_all_subscription_ids():
     client = oci.onesubscription.OrganizationSubscriptionClient(config={}, signer=signer)
     response = client.list_organization_subscriptions(compartment_id=tenancy_id)
@@ -189,4 +193,19 @@ if __name__ == "__main__":
     csv_file = list_all_subscriptions(sub_ids)
     if csv_file:
         upload_csv_to_oracle(csv_file)
+
+        # Call UPDATE_OCI_SUBSCRIPTION_DETAILS
+        try:
+            os.environ['TNS_ADMIN'] = wallet_path
+            db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer) \
+                if not use_test_creds else db_pass
+
+            with oracledb.connect(user=db_user, password=db_password, dsn=db_dsn) as final_conn:
+                final_cursor = final_conn.cursor()
+                log_and_execute(final_cursor, "BEGIN UPDATE_OCI_SUBSCRIPTION_DETAILS; END;")
+                final_conn.commit()
+                final_cursor.close()
+                logging.info("✅ Procedure UPDATE_OCI_SUBSCRIPTION_DETAILS executed successfully.")
+        except Exception as e:
+            logging.error(f"❌ Failed to execute UPDATE_OCI_SUBSCRIPTION_DETAILS: {e}")
 
