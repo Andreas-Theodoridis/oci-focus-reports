@@ -5,7 +5,7 @@
 --------------------------------------------------------
 --  DDL for Table APP_CONFIG
 --------------------------------------------------------
-CREATE TABLE APP_CONFIG (
+CREATE TABLE "OCI_FOCUS_REPORTS"."APP_CONFIG" (
   CONFIG_KEY     VARCHAR2(100) PRIMARY KEY,
   CONFIG_VALUE   VARCHAR2(4000),
   UPDATED_AT     DATE DEFAULT SYSDATE
@@ -496,7 +496,6 @@ BEGIN
   -- Ensure all changes are committed
   COMMIT;
 END;
-
 /
 --------------------------------------------------------
 --  DDL for Procedure PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC
@@ -545,7 +544,6 @@ BEGIN
   -- Ensure all changes are committed
   COMMIT;
 END;
-
 /
 --------------------------------------------------------
 --  DDL for Procedure REFRESH_COST_USAGE_TS_PROC
@@ -656,7 +654,6 @@ BEGIN
     ocp.PATH, fr.USAGEUNIT;
   COMMIT;
 END;
-
 /
 --------------------------------------------------------
 --  DDL for Procedure REFRESH_CREDIT_USAGE_AGG_PROC
@@ -679,7 +676,6 @@ BEGIN
 
   COMMIT;
 END;
-
 /
 
 --------------------------------------------------------
