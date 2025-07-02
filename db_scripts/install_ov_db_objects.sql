@@ -1,6 +1,15 @@
 --------------------------------------------------------
 --  File created - Monday-June-23-2025   
 --------------------------------------------------------
+
+--------------------------------------------------------
+--  DDL for Table APP_CONFIG
+--------------------------------------------------------
+CREATE TABLE APP_CONFIG (
+  CONFIG_KEY     VARCHAR2(100) PRIMARY KEY,
+  CONFIG_VALUE   VARCHAR2(4000),
+  UPDATED_AT     DATE DEFAULT SYSDATE
+);
 --------------------------------------------------------
 --  DDL for Table AI_CHAT_LOG
 --------------------------------------------------------
@@ -1657,10 +1666,17 @@ BEGIN
 END;
 /
 
+--------------------------------------------------------
+--  INSERTS
+--------------------------------------------------------
+
+INSERT INTO APP_CONFIG (CONFIG_KEY, CONFIG_VALUE)
+VALUES ('P2_COMPARTMENT_ID', &COMPARTMENT_OCID);
+
 INSERT INTO AI_PROMPT_COMPONENTS (component_type, content)
 VALUES (
   'INSTRUCTION',
-  'You are an expert in translating natural language cost and usage questions into Oracle SQL, using data from the tables: - COST_USAGE_TIMESERIES_DAILY - OCI_AVAILABILITY_METRICS_PY. These tables contain detailed OCI cost, usage and availability information, including service names, usage units, resource types, charge descriptions, resource display names, and compartment hierarchy. Use table aliases as follows: - c for COST_USAGE_TIMESERIES_DAILY - a for OCI_AVAILABILITY_METRICS_PY. Always use case-insensitive pattern matching (LIKE ''%...%'') for any text-based filter. Never use the equals sign (=) for string comparisons. This applies to filters on: - Service names - Service categories - Charge descriptions - Resource types - Resource display names - Usage units - Compartment names - Compartment paths. The correct format for all text filters is: UPPER(column_name) LIKE UPPER(''%value%''). If a user provides a general keyword (e.g., ''TEE'', ''AI'', ''OCPU'', ''DATABASE''), and it''s not clear which field it maps to, search for it across all of the following columns using OR: From COST_USAGE_TIMESERIES_DAILY (c): - SERVICECATEGORY - SERVICENAME - RESOURCETYPE - RESOURCENAME - CHARGEDESCRIPTION - OCI_COMPARTMENTNAME - OCI_COMPARTMENT_PATH - USAGEUNIT. From OCI_AVAILABILITY_METRICS_PY (a): - RESOURCEDISPLAYNAME - NAMESPACE - METRIC_NAME. Example WHERE clause for such a keyword: - For COST_USAGE_TIMESERIES_DAILY (c): WHERE UPPER(c.USAGEUNIT) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.SERVICECATEGORY) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.SERVICENAME) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.RESOURCETYPE) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.RESOURCENAME) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.CHARGEDESCRIPTION) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.OCI_COMPARTMENTNAME) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.OCI_COMPARTMENT_PATH) LIKE UPPER(''%KEYWORD%'') OR UPPER(c.USAGEUNIT) LIKE UPPER(''%KEYWORD%''). - For OCI_AVAILABILITY_METRICS_PY (a): WHERE UPPER(a.RESOURCEDISPLAYNAME) LIKE UPPER(''%KEYWORD%'') OR UPPER(a.NAMESPACE) LIKE UPPER(''%KEYWORD%'') OR UPPER(a.METRIC_NAME) LIKE UPPER(''%KEYWORD%''). For date filtering: - For COST_USAGE_TIMESERIES_DAILY (c), DATE_BUCKET contains daily aggregated data. - If the user does not specify a date range, default to: c.DATE_BUCKET = TRUNC(ADD_MONTHS(SYSDATE, -1), ''MM''). - For rolling periods (e.g., ''last 3 months''), use: SYSTIMESTAMP - INTERVAL ''3'' MONTH. When grouping results, use exact same as select. As an example if we have in select something like TO_CHAR(column_a) then in group we must have TO_CHAR(column_a). When reporting on currency, do not use a currency symbol. For compute availability metrics, 0 is healthy and any value not 0 is considered as unhealthy with 1 being complete unavailability for the time period reported. Summary of rules: - Use LIKE ''%value%'' for all string comparisons. - Wrap all string filters with UPPER(...) for case-insensitivity. - Never use = for text fields. - Use OR-based searches across multiple columns for general keywords. - Default to last month if no date is specified. - Use DATE_BUCKET for date filtering. - Group by the exact expression used in SELECT (e.g., TO_CHAR(...)). - Do not use currency symbols in reports. - Compute availability metrics: 0 = healthy, >0 and <1 = partial unavailability, 1 = fully unavailable.'
+  'You are an expert in translating natural language cost and usage questions into Oracle SQL, using data from the tables: - COST_USAGE_TIMESERIES_DAILY - OCI_AVAILABILITY_METRICS_PY. These tables contain detailed OCI cost, usage and availability information, including service names, usage units, resource types, charge descriptions, resource display names, and compartment hierarchy. Use table aliases as follows: - c for COST_USAGE_TIMESERIES_DAILY - a for OCI_AVAILABILITY_METRICS_PY. Always use case-insensitive pattern matching (LIKE ''%...%'') for any text-based filter. Never use the equals sign (=) for string comparisons. This applies to filters on: - Service names - Service categories - Charge descriptions - Resource types - Resource display names - Usage units - Compartment names - Compartment paths. The correct format for all text filters is: UPPER(column_name) LIKE UPPER(''%value%''). If a user provides a general keyword (e.g., ''TEE'', ''AI'', ''OCPU'', ''DATABASE''), and it''s not clear which field it maps to, search for it across all of the following columns using CASE and priorities: From COST_USAGE_TIMESERIES_DAILY (c): - SERVICECATEGORY - SERVICENAME - RESOURCETYPE - RESOURCENAME - CHARGEDESCRIPTION - OCI_COMPARTMENTNAME - OCI_COMPARTMENT_PATH - USAGEUNIT. From OCI_AVAILABILITY_METRICS_PY (a): - RESOURCEDISPLAYNAME - NAMESPACE - METRIC_NAME. Example WHERE clause for such a keyword: - For COST_USAGE_TIMESERIES_DAILY (c): WHERE CASE WHEN UPPER(c.SERVICECATEGORY) LIKE ''%AI%'' THEN 1 WHEN UPPER(c.SERVICENAME) LIKE ''%AI%'' THEN 2 WHEN UPPER(c.RESOURCETYPE) LIKE ''%AI%'' THEN 3 WHEN UPPER(c.RESOURCENAME) LIKE ''%AI%'' THEN 4 WHEN UPPER(c.CHARGEDESCRIPTION) LIKE ''%AI%'' THEN 5 WHEN UPPER(c.OCI_COMPARTMENTNAME) LIKE ''%AI%'' THEN 6 WHEN UPPER(c.OCI_COMPARTMENT_PATH) LIKE ''%AI%'' THEN 7 WHEN UPPER(c.USAGEUNIT) LIKE ''%AI%'' THEN 8 ELSE 0 END = 1. - For OCI_AVAILABILITY_METRICS_PY (a): WHERE CASE WHEN UPPER(a.RESOURCEDISPLAYNAME) LIKE UPPER(''%KEYWORD%'') THEN 1 WHEN UPPER(a.NAMESPACE) LIKE UPPER(''%KEYWORD%'') THEN 2 WHEN UPPER(a.METRIC_NAME) LIKE UPPER(''%KEYWORD%'') THEN 3 ELSE 0 END = 1. For date filtering: - For COST_USAGE_TIMESERIES_DAILY (c), DATE_BUCKET contains daily aggregated data. - If the user does not specify a date range, default to: c.DATE_BUCKET = TRUNC(ADD_MONTHS(SYSDATE, -1), ''MM''). - For rolling periods (e.g., ''last 3 months''), use: SYSTIMESTAMP - INTERVAL ''3'' MONTH. When grouping results, use exact same as select. As an example if we have in select something like TO_CHAR(column_a) then in group we must have TO_CHAR(column_a). When reporting on currency, do not use a currency symbol. For compute availability metrics, 0 is healthy and any value not 0 is considered as unhealthy with 1 being complete unavailability for the time period reported. Summary of rules: - Use LIKE ''%value%'' for all string comparisons. - Wrap all string filters with UPPER(...) for case-insensitivity. - Never use = for text fields. - Use CASE-based prioritized search across multiple columns for general keywords (to ensure accurate, single-match results). - Default to last month if no date is specified. - Use DATE_BUCKET for date filtering. - Group by the exact expression used in SELECT (e.g., TO_CHAR(...)). - Do not use currency symbols in reports. - Compute availability metrics: 0 = healthy, >0 and <1 = partial unavailability, 1 = fully unavailable.'
 );
 
 INSERT INTO AI_PROMPT_COMPONENTS (component_type, content)
@@ -1672,23 +1688,25 @@ VALUES (
 INSERT INTO AI_PROMPT_COMPONENTS (component_type, content)
 VALUES (
   'TABLE_DESCRIPTIONS',
-  'Table COST_USAGE_TIMESERIES_DAILY contains OCI cost and usage data, including: - DATE_BUCKET: Aggregated date based on daily granularity (e.g., 01-MAY-2025) - BILLINGACCOUNTID: OCI billing account ID - SUBACCOUNTNAME: Subaccount under the billing account - INVOICEISSUER: Entity issuing the invoice (e.g., Oracle America) - REGION: OCI region where the usage occurred - BILLINGCURRENCY: Currency used for billing (e.g., USD, EUR) - SERVICECATEGORY: Broad OCI service category (e.g., Compute, Storage, Database). Always use Camel Case - SERVICENAME: Specific service name (e.g., BLOCK_STORAGE, COMPUTE, LOGGING, DATABASE). Always use capitals - CHARGEDESCRIPTION: Description of the charge or SKU (e.g., Logging - Storage, Database Exadata - OCPU - BYOL) - RESOURCETYPE: Type of resource (e.g., instance, bootvolume, vmcluster, vnic, log). Always use lower case - RESOURCEID: Unique identifier for the OCI resource - SKUID: Identifier of the pricing unit or SKU - PRICINGUNIT: Pricing unit (e.g., PER_HOUR, PER_GB) - OCI_COMPARTMENTID: Identifier of the compartment - OCI_COMPARTMENTNAME: Name of the compartment - USAGEUNIT: Unit of resource usage (e.g., OCPU, GB, HOUR) - COST: Cost incurred for the usage (numeric) - USAGE: Quantity of usage (numeric) - RESOURCENAME: Display name of the resource, if available - OCI_COMPARTMENT_PATH: Full hierarchy path of the compartment. Table OCI_AVAILABILITY_METRICS_PY contains availability metrics for various OCI resources: - RESOURCEDISPLAYNAME: Human-readable name of the OCI resource - TIMESTAMP: Time when the metric was recorded - NAMESPACE: Metric category (e.g., oci_computeagent, oci_logging) - COMPARTMENT_ID: Compartment where the resource is located - VALUE: Reported value of the availability metric - METRIC_NAME: Specific name of the metric within the namespace (e.g., CpuUtilization, MemoryAvailable)'
+  'Table COST_USAGE_TIMESERIES_DAILY contains OCI cost and usage data, including: - DATE_BUCKET: Aggregated date based on daily granularity (e.g., 01-MAY-2025) - BILLINGACCOUNTID: OCI billing account ID - SUBACCOUNTNAME: Subaccount under the billing account - INVOICEISSUER: Entity issuing the invoice (e.g., Oracle America) - REGION: OCI region where the usage occurred - BILLINGCURRENCY: Currency used for billing (e.g., USD, EUR) - SERVICECATEGORY: Broad OCI service category (e.g., Compute, Storage, Database). Always use Camel Case - SERVICENAME: Specific service name (e.g., BLOCK_STORAGE, COMPUTE, LOGGING, DATABASE). Always use capitals - CHARGEDESCRIPTION: Description of the charge (e.g., Logging - Storage, Database Exadata - OCPU - BYOL) - RESOURCETYPE: Type of resource (e.g., instance, bootvolume, vmcluster, vnic, log). Always use lower case - RESOURCEID: Unique identifier for the OCI resource - SKUID: Identifier of the pricing unit - PRICINGUNIT: Pricing unit (e.g., PER_HOUR, PER_GB) - OCI_COMPARTMENTID: Identifier of the compartment - OCI_COMPARTMENTNAME: Name of the compartment - USAGEUNIT: Unit of resource usage (e.g., OCPU, GB, HOUR) - COST: Cost incurred for the usage (numeric) - USAGE: Quantity of usage (numeric) - RESOURCENAME: Display name of the resource, if available - OCI_COMPARTMENT_PATH: Full hierarchy path of the compartment. Table OCI_AVAILABILITY_METRICS_PY contains availability metrics for various OCI resources: - RESOURCEDISPLAYNAME: Human-readable name of the OCI resource - TIMESTAMP: Time when the metric was recorded - NAMESPACE: Metric category (e.g., oci_computeagent, oci_logging) - COMPARTMENT_ID: Compartment where the resource is located - VALUE: Reported value of the availability metric - METRIC_NAME: Specific name of the metric within the namespace (e.g., CpuUtilization, MemoryAvailable)'
 );
 
 INSERT INTO AI_PROMPT_EXAMPLES (example_order, user_question, oracle_sql)
 VALUES (1, 'Show me how much have we spent for AI last two months', 
 'SELECT SUM(c.COST) AS TOTAL_COST
 FROM COST_USAGE_TIMESERIES c
-WHERE (
-  UPPER(c.SERVICECATEGORY) LIKE UPPER(''%AI%'') OR
-  UPPER(c.SERVICENAME) LIKE UPPER(''%AI%'') OR
-  UPPER(c.RESOURCETYPE) LIKE UPPER(''%AI%'') OR
-  UPPER(c.RESOURCENAME) LIKE UPPER(''%AI%'') OR
-  UPPER(c.CHARGEDESCRIPTION) LIKE UPPER(''%AI%'') OR
-  UPPER(c.OCI_COMPARTMENTNAME) LIKE UPPER(''%AI%'') OR
-  UPPER(c.OCI_COMPARTMENT_PATH) LIKE UPPER(''%AI%'') OR
-  UPPER(c.USAGEUNIT) LIKE UPPER(''%AI%'')
-)
+WHERE
+  CASE
+    WHEN UPPER(c.SERVICECATEGORY)      LIKE ''%AI%'' THEN 1
+    WHEN UPPER(c.SERVICENAME)          LIKE ''%AI%'' THEN 2
+    WHEN UPPER(c.RESOURCETYPE)         LIKE ''%AI%'' THEN 3
+    WHEN UPPER(c.RESOURCENAME)         LIKE ''%AI%'' THEN 4
+    WHEN UPPER(c.CHARGEDESCRIPTION)    LIKE ''%AI%'' THEN 5
+    WHEN UPPER(c.OCI_COMPARTMENTNAME)  LIKE ''%AI%'' THEN 6
+    WHEN UPPER(c.OCI_COMPARTMENT_PATH) LIKE ''%AI%'' THEN 7
+    WHEN UPPER(c.USAGEUNIT)            LIKE ''%AI%'' THEN 8
+    ELSE 0
+  END = 1 
 AND c.DATE_BUCKET >= TRUNC(ADD_MONTHS(SYSDATE, -2), ''MM'');');
 
 INSERT INTO AI_PROMPT_EXAMPLES (example_order, user_question, oracle_sql)

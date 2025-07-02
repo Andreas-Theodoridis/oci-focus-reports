@@ -51,7 +51,7 @@ Fof OCI IAM Domains SSO Authentication:
 Login to OCI Console -> Identity & Security -> Domains -> Default Domain(Under root Compartment) -> Integrated Application -> OAuth configuration -> Make a note of "Client ID" and "Secret". On the same page click "Edit OAuth configuration" => Redirect URL: https://<<adw_url>/ords/apex_authentication.callback and Post-logout redirect URL: https://<<adw_url>/ords/f?p=100 
 Also make a note of the OCI IAM Domain URL in OCI Console -> Identity & Security -> Domains -> Default Domain -> Details -> "Domain URL"
 
-Login to APEX app OCI_FOCUS_REPORTS => https://<<adw_url>>/ords/r/apex => CI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment
+Login to APEX app OCI_FOCUS_REPORTS => https://<<adw_url>>/ords/r/apex => OCI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment
 Click on "Workspace Utilities" => "Web Credentials" and edit OCI OAuth Credentials (Client ID & Secret) with the values taken above.
 Then from "App Builder" => Select "Focus Cost Reporting" => "Shared Components" => "Authentication Schemes" => "OCI IAM OAuth" and edit "Discrovery URL" with the URL taken above + Click on "Make Current Scheme" button.
 Back to "Shared Components" => "Authorization Schemes" => "Administration Rights" => Edit "Scheme Type" => "Exists SQL Query" => SQL Query =>

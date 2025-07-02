@@ -45,6 +45,26 @@ def extract_table_ddls(sql_text):
         table_ddls[table.upper()] = ddl.strip()
     return table_ddls
 
+# === Extract CREATE INDEX DDLs ===
+def extract_index_ddls(sql_text):
+    index_ddls = {}
+    pattern = re.compile(r'CREATE INDEX\s+"[^"]+"\."([^"]+)"\s+ON\s+.*?;', re.DOTALL | re.IGNORECASE)
+    for match in pattern.finditer(sql_text):
+        index_name = match.group(1).upper()
+        ddl = match.group(0).strip()
+        index_ddls[index_name] = ddl
+    return index_ddls
+
+# === Extract CREATE MATERIALIZED VIEW DDLs ===
+def extract_mv_ddls(sql_text):
+    mv_ddls = {}
+    pattern = re.compile(r'CREATE MATERIALIZED VIEW\s+"[^"]+"\."([^"]+)"\s+.*?;', re.DOTALL | re.IGNORECASE)
+    for match in pattern.finditer(sql_text):
+        mv_name = match.group(1).upper()
+        ddl = match.group(0).strip()
+        mv_ddls[mv_name] = ddl
+    return mv_ddls
+
 # === Fetch existing DB DDL using DBMS_METADATA ===
 def get_existing_ddl(cursor, table_name):
     try:
@@ -64,6 +84,24 @@ def get_existing_ddl(cursor, table_name):
             return result[0].read()
     except Exception as e:
         logging.warning(f"⚠️ Could not get table DDL for {table_name}: {e}")
+    return None
+
+# === Fetch existing DB Object DDL using DBMS_METADATA ===
+def get_object_ddl(cursor, object_type, object_name):
+    try:
+        cursor.execute("""
+        BEGIN
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', FALSE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', FALSE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', FALSE);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SQLTERMINATOR', TRUE);
+        END;
+        """)
+        cursor.execute("SELECT DBMS_METADATA.GET_DDL(:1, :2, :3) FROM DUAL", [object_type, object_name, target_schema])
+        result = cursor.fetchone()
+        return result[0].read() if result and result[0] else None
+    except Exception as e:
+        logging.warning(f"⚠️ Could not get {object_type} DDL for {object_name}: {e}")
     return None
 
 # === Compare two DDL strings (normalized) ===
@@ -95,13 +133,20 @@ def main():
 
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
+
     defined_tables = extract_table_ddls(sql_text)
+    defined_indexes = extract_index_ddls(sql_text)
+    defined_mvs = extract_mv_ddls(sql_text)
+
     logging.info(f"📋 Found {len(defined_tables)} tables in SQL script.")
+    logging.info(f"📌 Found {len(defined_indexes)} indexes in SQL script.")
+    logging.info(f"📦 Found {len(defined_mvs)} materialized views in SQL script.")
 
     os.environ['TNS_ADMIN'] = wallet_path
     conn = oracledb.connect(user=db_user, password=db_pass, dsn=db_dsn)
     cursor = conn.cursor()
 
+    # === Compare Tables ===
     for table_name, ddl in defined_tables.items():
         db_ddl = get_existing_ddl(cursor, table_name)
 
@@ -111,7 +156,6 @@ def main():
             print(ddl)
             continue
 
-        # Compare table body
         if not compare_ddl(ddl, db_ddl):
             logging.warning(f"✏️ Table {table_name}: Table body differs → SHOULD ALTER")
             print(f"\n--- {table_name} (TABLE BODY DIFFERENT) ---")
@@ -120,9 +164,41 @@ def main():
         else:
             logging.info(f"✅ Table {table_name}: Body matches")
 
-        # Compare PK if present
-        script_pk_regex = re.search(rf'ALTER TABLE.*{table_name}.*ADD PRIMARY KEY.*?;', sql_text, re.IGNORECASE | re.DOTALL)
-        script_pk_ddl = script_pk_regex.group(0) if script_pk_regex else None
+    # === Compare Indexes ===
+    for index_name, ddl in defined_indexes.items():
+        db_ddl = get_object_ddl(cursor, "INDEX", index_name)
+
+        if db_ddl is None:
+            logging.info(f"➕ Index {index_name}: Not found in DB → SHOULD CREATE")
+            print(f"\n--- INDEX {index_name} (MISSING IN DB) ---")
+            print(ddl)
+            continue
+
+        if not compare_ddl(ddl, db_ddl):
+            logging.warning(f"✏️ Index {index_name}: Differs → SHOULD DROP & RECREATE")
+            print(f"\n--- INDEX {index_name} (DIFFERENCE FOUND) ---")
+            print("▶️ Script DDL:\n", ddl)
+            print("\n🔁 DB DDL:\n", db_ddl)
+        else:
+            logging.info(f"✅ Index {index_name}: Matches")
+
+    # === Compare Materialized Views ===
+    for mv_name, ddl in defined_mvs.items():
+        db_ddl = get_object_ddl(cursor, "MATERIALIZED_VIEW", mv_name)
+
+        if db_ddl is None:
+            logging.info(f"➕ MV {mv_name}: Not found in DB → SHOULD CREATE")
+            print(f"\n--- MV {mv_name} (MISSING IN DB) ---")
+            print(ddl)
+            continue
+
+        if not compare_ddl(ddl, db_ddl):
+            logging.warning(f"✏️ MV {mv_name}: Differs → SHOULD DROP & RECREATE")
+            print(f"\n--- MV {mv_name} (DIFFERENCE FOUND) ---")
+            print("▶️ Script DDL:\n", ddl)
+            print("\n🔁 DB DDL:\n", db_ddl)
+        else:
+            logging.info(f"✅ MV {mv_name}: Matches")
 
     cursor.close()
     conn.close()
