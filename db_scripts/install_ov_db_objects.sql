@@ -10,6 +10,23 @@ CREATE TABLE "OCI_FOCUS_REPORTS"."APP_CONFIG" (
   CONFIG_VALUE   VARCHAR2(4000),
   UPDATED_AT     DATE DEFAULT SYSDATE
 );
+
+--------------------------------------------------------
+--  DDL for Table APP_CONFIG
+--------------------------------------------------------
+CREATE TABLE "OCI_FOCUS_REPORTS"."CREDIT_CONSUMPTION_STATE" (
+  SUBSCRIPTION_ID      VARCHAR2(100),
+  BILLINGACCOUNTID     VARCHAR2(100),
+  ORDER_NUMBER         VARCHAR2(100),
+  TIME_START           DATE,
+  TIME_END             DATE,
+  ORIGINAL_QUANTITY    NUMBER,
+  REMAINING_QUANTITY   NUMBER,
+  DEPLETED             BOOLEAN,
+  LAST_CONSUMED_AT     DATE,
+  ISO_CODE             VARCHAR2(10),
+  LAST_UPDATED         DATE DEFAULT SYSDATE
+);
 --------------------------------------------------------
 --  DDL for Table AI_CHAT_LOG
 --------------------------------------------------------
