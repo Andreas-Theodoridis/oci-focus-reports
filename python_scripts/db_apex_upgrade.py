@@ -118,19 +118,31 @@ def extract_function_ddls(sql_text):
 
 def extract_insert_statements(sql_text, target_tables):
     inserts = {tbl: [] for tbl in target_tables}
-    
-    # Matches full INSERT INTO ... VALUES (...) ending in );
-    # Allows for quoted content with semicolons and multiline support
-    pattern = re.compile(
-        r'(INSERT\s+INTO\s+(?:"[^"]+"\.)?"?([A-Z0-9_]+)"?\s*\(.*?\)\s*VALUES\s*\(.*?\)\s*;?)',
-        re.DOTALL | re.IGNORECASE
-    )
+    lines = sql_text.splitlines()
+    collecting = False
+    buffer = []
+    current_table = None
 
-    for match in pattern.finditer(sql_text):
-        full_stmt, table_name = match.groups()
-        table_upper = table_name.upper()
-        if table_upper in inserts:
-            inserts[table_upper].append(full_stmt.strip())
+    for line in lines:
+        stripped = line.strip()
+
+        # Check for start of INSERT
+        if not collecting and stripped.upper().startswith("INSERT INTO"):
+            for tbl in target_tables:
+                pattern = re.compile(rf'INSERT\s+INTO\s+(?:"[^"]+"\.)?"?{tbl}"?', re.IGNORECASE)
+                if pattern.search(stripped):
+                    collecting = True
+                    current_table = tbl
+                    buffer = [line]
+                    break
+        elif collecting:
+            buffer.append(line)
+            # Check if line ends with );
+            if stripped.endswith(");"):
+                inserts[current_table].append("\n".join(buffer).strip())
+                collecting = False
+                buffer = []
+                current_table = None
 
     return inserts
 
