@@ -139,7 +139,7 @@ wwv_flow_fnd_user_api.create_fnd_user (
   p_last_name                    => '',
   p_description                  => '',
   p_email_address                => 'admin@obv.local',
-  p_web_password                 => 'Manager123123',
+  p_web_password                 => 'Mypassword123123',
   p_web_password_format          => 'CLEAR_TEXT',
   p_group_ids                    => '8095228254626798:',
   p_developer_privs              => 'ADMIN:CREATE:DATA_LOADER:EDIT:HELP:MONITOR:SQL',

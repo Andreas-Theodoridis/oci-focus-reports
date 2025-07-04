@@ -47,6 +47,11 @@ Click on Administration Icon (screenshot) on top right (right to the username) =
     Create Groups: ADMINS, CONTRIBUTORS, READERS
     Create at least one User and assing it to group ADMINS-->
 
+1st time Login to OV APEX app:
+Username: OVADMIN
+Password: Mypassword123123 
+You will be prompeted to change the password upon first login
+
 Fof OCI IAM Domains SSO Authentication:
 Login to OCI Console -> Identity & Security -> Domains -> Default Domain(Under root Compartment) -> Integrated Application -> OAuth configuration -> Make a note of "Client ID" and "Secret". On the same page click "Edit OAuth configuration" => Redirect URL: https://<<adw_url>/ords/apex_authentication.callback and Post-logout redirect URL: https://<<adw_url>/ords/f?p=100 
 Also make a note of the OCI IAM Domain URL in OCI Console -> Identity & Security -> Domains -> Default Domain -> Details -> "Domain URL"
