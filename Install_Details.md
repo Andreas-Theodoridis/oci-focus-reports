@@ -41,15 +41,17 @@ Wait a couple of minutes for scale up to complete
 Install crontab entries:
 /home/opc/oci-focus-reports/other_scripts/install_cron.sh
 
-Login to workpasce OCI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment.
+<!--Login to workpasce OCI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment.
 For APEX Authentication:
 Click on Administration Icon (screenshot) on top right (right to the username) => Manage Users and Group
     Create Groups: ADMINS, CONTRIBUTORS, READERS
-    Create at least one User and assing it to group ADMINS
+    Create at least one User and assing it to group ADMINS-->
 
 Fof OCI IAM Domains SSO Authentication:
 Login to OCI Console -> Identity & Security -> Domains -> Default Domain(Under root Compartment) -> Integrated Application -> OAuth configuration -> Make a note of "Client ID" and "Secret". On the same page click "Edit OAuth configuration" => Redirect URL: https://<<adw_url>/ords/apex_authentication.callback and Post-logout redirect URL: https://<<adw_url>/ords/f?p=100 
 Also make a note of the OCI IAM Domain URL in OCI Console -> Identity & Security -> Domains -> Default Domain -> Details -> "Domain URL"
+
+Inside OCI IAM Domains under Default Domain, make sure that the application's admin users are added in Group CA_APEX_ADMINS and all others in CA_APEX_USERS.
 
 Login to APEX app OCI_FOCUS_REPORTS => https://<<adw_url>>/ords/r/apex => OCI_FOCUS_REPORTS with usenrname OCI_FOCUS_REPORT and password provided during resource manager deployment
 Click on "Workspace Utilities" => "Web Credentials" and edit OCI OAuth Credentials (Client ID & Secret) with the values taken above.
