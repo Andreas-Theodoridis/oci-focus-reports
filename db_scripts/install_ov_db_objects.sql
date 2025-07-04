@@ -742,7 +742,7 @@ END;
 --  DDL for Procedure refresh_credit_consumption_state_proc
 --------------------------------------------------------
 
-CREATE OR REPLACE PROCEDURE refresh_credit_consumption_state_proc IS
+create or replace PROCEDURE                   refresh_credit_consumption_state_proc IS
 
   -- Record for credit_consumption_state rows
   TYPE slice_rec IS RECORD (
@@ -810,13 +810,16 @@ BEGIN
 
     TO_NUMBER(
       CASE
-        WHEN quantity IS NOT NULL AND REGEXP_LIKE(quantity, '^[0-9]+(\\.[0-9]+)?$') THEN quantity
-        ELSE original_promo_amount
+        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(quantity))
+        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(original_promo_amount))
+        ELSE NULL
       END
-    ) / NULLIF(ROUND((
+    ) / NULLIF(GREATEST(ROUND((
       CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
       CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) / 365), 0) AS original_quantity,
+    ) / 365.0), 1), 0) AS original_quantity,
 
     CASE
       WHEN (TO_NUMBER(available_amount) - (
@@ -828,30 +831,36 @@ BEGIN
       ) * (
         TO_NUMBER(
           CASE
-            WHEN quantity IS NOT NULL AND REGEXP_LIKE(quantity, '^[0-9]+(\\.[0-9]+)?$') THEN quantity
-            ELSE original_promo_amount
+        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(quantity))
+        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(original_promo_amount))
+        ELSE NULL
           END
-        ) / NULLIF(ROUND((
-          CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-          CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-        ) / 365), 0)
+        ) / NULLIF(GREATEST(ROUND((
+      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
+      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
+    ) / 365.0), 1), 0)
       )) <= 200 THEN NULL
       ELSE TO_NUMBER(available_amount) - (
-        (NULLIF(ROUND((
-          CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-          CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-        ) / 365), 0) -
+        (NULLIF(GREATEST(ROUND((
+      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
+      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
+    ) / 365.0), 1), 0) -
         (TRUNC(MONTHS_BETWEEN(SYSDATE, CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)) / 12) + 1)
         ) * (
           TO_NUMBER(
             CASE
-              WHEN quantity IS NOT NULL AND REGEXP_LIKE(quantity, '^[0-9]+(\\.[0-9]+)?$') THEN quantity
-              ELSE original_promo_amount
+        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(quantity))
+        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(original_promo_amount))
+        ELSE NULL
             END
-          ) / NULLIF(ROUND((
-            CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-            CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-          ) / 365), 0)
+          ) / NULLIF(GREATEST(ROUND((
+      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
+      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
+    ) / 365.0), 1), 0)
         )
       )
     END AS remaining_quantity,
@@ -866,13 +875,16 @@ BEGIN
       ) * (
         TO_NUMBER(
           CASE
-            WHEN quantity IS NOT NULL AND REGEXP_LIKE(quantity, '^[0-9]+(\\.[0-9]+)?$') THEN quantity
-            ELSE original_promo_amount
+        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(quantity))
+        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
+          THEN TO_NUMBER(TRIM(original_promo_amount))
+        ELSE NULL
           END
-        ) / NULLIF(ROUND((
-          CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-          CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-        ) / 365), 0)
+        ) / NULLIF(GREATEST(ROUND((
+      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
+      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
+    ) / 365.0), 1), 0)
       )) <= 200 THEN 1
       ELSE 0
     END AS depleted,
@@ -888,8 +900,8 @@ BEGIN
     AND time_start IS NOT NULL
     AND time_end IS NOT NULL
     AND substatus = 'ACTIVE'
-    AND SYSDATE BETWEEN 
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) AND 
+    AND SYSDATE BETWEEN
+      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) AND
       CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE);
 
 -----------------------------------------------------------------------------
