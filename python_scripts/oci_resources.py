@@ -31,6 +31,7 @@ compartment_ocid = config["comp_ocid"]
 log_file_pattern = config["resources_file_name_pattern"]
 
 resources_table = config["resources_table"]
+resource_relationship_table = config["resource_relationship_table"]
 db_user = config["db_user"]
 db_pass = config["db_password"]
 db_dsn = config["db_dsn"]
@@ -174,7 +175,7 @@ def search_all_regions_and_save():
             logging.info(f"📁 Relationships CSV written to {relationships_csv}")
 
             # Upload to Oracle DB
-            upload_relationships_to_oracle(relationships_csv, "RESOURCE_RELATIONSHIPS", signer)
+            upload_relationships_to_oracle(relationships_csv, resource_relationship_table, signer)
 
         else:
             logging.warning("⚠️ No data collected from any region.")

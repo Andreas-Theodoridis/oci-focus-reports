@@ -7,6 +7,7 @@
   "focus_reports_table": "FOCUS_REPORTS_PY",
   "oci_subscriptions_table": "OCI_SUBSCRIPTIONS_PY",
   "resources_table": "OCI_RESOURCES_PY",
+  "resource_relationship_table": "OCI_RESOURCES_RELATIONSHIPS_PY",
   "exa_maintenance_metrics_table": "OCI_EXA_MAINTENANCE_PY",
   "aimodel_table": "AI_MODEL_CONFIG",
   "wallet_dir": "/home/opc/oci-focus-reports/wallet",
