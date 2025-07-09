@@ -469,7 +469,6 @@ BEGIN
   l_result := REPLACE(l_result, CHR(13), '');    -- carriage return
   RETURN l_result;
 END;
-/
 
 --------------------------------------------------------
 --  DDL for Procedure PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC
