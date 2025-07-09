@@ -104,10 +104,16 @@ def search_all_regions_and_save():
                     items.extend(response.data.items)
 
                 for item in items:
+                    defined_tags = json.dumps(item.defined_tags or {})
+                    freeform_tags = json.dumps(item.freeform_tags or {})
                     all_results.append({
                         "display-name": item.display_name,
                         "identifier": item.identifier,
-                        "region": region
+                        "region": region,
+                        "resource-type": item.resource_type,
+                        "defined-tags": defined_tags,
+                        "freeform-tags": freeform_tags,
+                        "compartment-id": item.compartment_id
                     })
 
                 logging.info(f"✅ {len(items)} items retrieved from {region}")
@@ -180,7 +186,11 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
             column_mapping = {
                 "display-name": "DISPLAY_NAME",
                 "identifier": "IDENTIFIER",
-                "region": "REGION"
+                "region": "REGION",
+                "resource-type": "RESOURCE_TYPE",
+                "defined-tags": "DEFINED_TAGS",
+                "freeform-tags": "FREEFORM_TAGS",
+                "compartment-id": "COMPARTMENT_ID"
             }
 
             columns = list(column_mapping.values())
