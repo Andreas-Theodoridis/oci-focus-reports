@@ -120,22 +120,30 @@ def search_all_regions_and_save():
                     # Collect dependent (related) resources for this item
                     related_resources = []
 
-                    fts_details = oci.resource_search.models.FreeTextSearchDetails(
-                        type="FreeText",
-                        text=item.identifier
+                    structured_details = oci.resource_search.models.StructuredSearchDetails(
+                        type="Structured",
+                        query=(
+                            f"query all resources where "
+                            f"definedTags.namespace = 'Oracle-Tags' and "
+                            f"definedTags.key = 'CreatedBy' and "
+                            f"definedTags.value = '{item.identifier}'"
+                        )
                     )
-                    fts_response = search_client.search_resources(fts_details)
 
-                    for related_item in fts_response.data.items:
-                        if related_item.identifier != item.identifier:
-                            related_resources.append({
-                                "parent_identifier": item.identifier,
-                                "related_identifier": related_item.identifier,
-                                "related_display_name": related_item.display_name,
-                                "related_resource_type": related_item.resource_type,
-                                "related_compartment_id": related_item.compartment_id,
-                                "related_region": region
-                            })
+                    try:
+                        structured_response = search_client.search_resources(structured_details)
+                        for related_item in structured_response.data.items:
+                            if related_item.identifier != item.identifier:
+                                related_resources.append({
+                                    "parent_identifier": item.identifier,
+                                    "related_identifier": related_item.identifier,
+                                    "related_display_name": related_item.display_name or "N/A",
+                                    "related_resource_type": related_item.resource_type,
+                                    "related_compartment_id": related_item.compartment_id,
+                                    "related_region": region
+                                })
+                    except oci.exceptions.ServiceError as e:
+                        logging.warning(f"⚠️ Relationship search failed for {item.identifier}: {e}")
 
                     # Add to a master list for later CSV export
                     all_relationships.extend(related_resources)
