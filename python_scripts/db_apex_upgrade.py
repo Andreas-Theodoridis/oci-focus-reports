@@ -4,6 +4,7 @@ import json
 import base64
 import logging
 import oracledb
+import hashlib
 from datetime import datetime
 import subprocess
 
@@ -157,6 +158,13 @@ def execute_sql_script(script_path, user, password, dsn, description):
         logging.error(f"❌ Error while executing {description}:")
         logging.error(e.stderr)
 
+def file_checksum(path):
+    hash_sha256 = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()
+
 # === Main ===
 def main():
     import oci
@@ -266,10 +274,24 @@ def main():
     if input("❓ Do you want to apply patch.sql to the database? (y/N): ").strip().lower() == 'y':
         execute_sql_script(patch_path, db_user, db_pass, db_dsn, "patch.sql")
 
-    # === Execute install_ov_apex_app.sql if user agrees ===
+    # === Execute install_ov_apex_app.sql if file has changed and user agrees ===
     apex_path = os.path.join(app_dir, "db_scripts", "install_ov_apex_app.sql")
-    if input("❓ Do you want to install/update APEX app? (y/N): ").strip().lower() == 'y':
-        execute_sql_script(apex_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
+    checksum_path = os.path.join(app_dir, "db_scripts", ".apex_app_checksum")
+    current_checksum = file_checksum(apex_path)
+
+    previous_checksum = None
+    if os.path.exists(checksum_path):
+        with open(checksum_path, "r") as f:
+            previous_checksum = f.read().strip()
+
+    if current_checksum != previous_checksum:
+        print("🔍 Detected change in install_ov_apex_app.sql.")
+        if input("❓ Do you want to install/update APEX app? (y/N): ").strip().lower() == 'y':
+            execute_sql_script(apex_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
+            with open(checksum_path, "w") as f:
+                f.write(current_checksum)
+    else:
+        print("✅ No changes detected in install_ov_apex_app.sql. Skipping APEX install.")
 
 if __name__ == "__main__":
     main()
