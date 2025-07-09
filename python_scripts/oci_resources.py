@@ -84,6 +84,7 @@ def search_all_regions_and_save():
         logging.info(f"🔁 Found {len(regions)} regions: {regions}")
 
         all_results = []
+        all_relationships = []
 
         for region in regions:
             logging.info(f"🌍 Switching to region: {region}")
@@ -115,6 +116,28 @@ def search_all_regions_and_save():
                         "freeform-tags": freeform_tags,
                         "compartment-id": item.compartment_id
                     })
+                    # Collect dependent (related) resources for this item
+                    related_resources = []
+
+                    fts_details = oci.resource_search.models.FreeTextSearchDetails(
+                        type="FreeText",
+                        text=item.identifier
+                    )
+                    fts_response = search_client.search_resources(fts_details)
+
+                    for related_item in fts_response.data.items:
+                        if related_item.identifier != item.identifier:
+                            related_resources.append({
+                                "parent_identifier": item.identifier,
+                                "related_identifier": related_item.identifier,
+                                "related_display_name": related_item.display_name,
+                                "related_resource_type": related_item.resource_type,
+                                "related_compartment_id": related_item.compartment_id,
+                                "related_region": region
+                            })
+
+                    # Add to a master list for later CSV export
+                    all_relationships.extend(related_resources)
 
                 logging.info(f"✅ {len(items)} items retrieved from {region}")
 
@@ -140,6 +163,18 @@ def search_all_regions_and_save():
 
             # === Upload to Oracle DB
             upload_csv_to_oracle(csv_file, resources_table, signer)
+        # === Save related resources to CSV
+        relationships_csv = os.path.join(output_dir, f"resource_relationships.csv")
+        if all_relationships:
+            fieldnames = all_relationships[0].keys()
+            with open(relationships_csv, "w", newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
+                writer.writeheader()
+                writer.writerows(all_relationships)
+            logging.info(f"📁 Relationships CSV written to {relationships_csv}")
+
+            # Upload to Oracle DB
+            upload_relationships_to_oracle(relationships_csv, "RESOURCE_RELATIONSHIPS", signer)
 
         else:
             logging.warning("⚠️ No data collected from any region.")
@@ -205,6 +240,51 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
     except Exception as e:
         logging.error(f"❌ DB upload failed: {e}")
 
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def upload_relationships_to_oracle(csv_path, table_name, signer):
+    logging.info(f"🔼 Uploading relationships CSV to Oracle DB: {csv_path}")
+    os.environ["TNS_ADMIN"] = wallet_path
+
+    conn = None
+    cursor = None
+
+    try:
+        db_password = db_pass
+        if "pass_secret_ocid" in config.get("db_credentials", {}):
+            db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
+
+        conn = oracledb.connect(user=db_user, password=db_password, dsn=db_dsn)
+        cursor = conn.cursor()
+
+        cursor.execute(f"TRUNCATE TABLE {table_name}")
+        logging.info(f"🧹 Truncated table {table_name}")
+
+        with open(csv_path, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f, delimiter=';')
+
+            columns = [
+                "PARENT_IDENTIFIER",
+                "RELATED_IDENTIFIER",
+                "RELATED_DISPLAY_NAME",
+                "RELATED_RESOURCE_TYPE",
+                "RELATED_COMPARTMENT_ID",
+                "RELATED_REGION"
+            ]
+            placeholders = ", ".join([f":{i+1}" for i in range(len(columns))])
+            insert_sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+
+            rows = [tuple(row[col.lower()] for col in columns) for row in reader]
+            cursor.executemany(insert_sql, rows)
+            conn.commit()
+            logging.info(f"✅ Inserted {cursor.rowcount} relationships into {table_name}")
+
+    except Exception as e:
+        logging.error(f"❌ Failed to upload relationships: {e}")
     finally:
         if cursor:
             cursor.close()
