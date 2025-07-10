@@ -117,23 +117,23 @@ def search_all_regions_and_save():
                         "freeform-tags": freeform_tags,
                         "compartment-id": item.compartment_id
                     })
-                    # Collect dependent (related) resources for this item
                     related_resources = []
 
-                    structured_details = oci.resource_search.models.StructuredSearchDetails(
-                        type="Structured",
-                        query=(
-                            f"query all resources where "
-                            f"definedTags.namespace = 'Oracle-Tags' and "
-                            f"definedTags.key = 'CreatedBy' and "
-                            f"definedTags.value = '{item.identifier}'"
-                        )
+                    fts_details = oci.resource_search.models.FreeTextSearchDetails(
+                        type="FreeText",
+                        text=item.identifier
                     )
 
                     try:
-                        structured_response = search_client.search_resources(structured_details)
-                        for related_item in structured_response.data.items:
-                            if related_item.identifier != item.identifier:
+                        fts_response = search_client.search_resources(fts_details)
+                        for related_item in fts_response.data.items:
+                            created_by = (
+                                related_item.defined_tags
+                                .get("Oracle-Tags", {})
+                                .get("CreatedBy")
+                            )
+
+                            if created_by == item.identifier and related_item.identifier != item.identifier:
                                 related_resources.append({
                                     "parent_identifier": item.identifier,
                                     "related_identifier": related_item.identifier,
@@ -142,6 +142,7 @@ def search_all_regions_and_save():
                                     "related_compartment_id": related_item.compartment_id,
                                     "related_region": region
                                 })
+
                     except oci.exceptions.ServiceError as e:
                         logging.warning(f"⚠️ Relationship search failed for {item.identifier}: {e}")
 
@@ -210,7 +211,7 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
         db_password = db_pass
         if "pass_secret_ocid" in config.get("db_credentials", {}):
             db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
-        
+
         os.environ['TNS_ADMIN'] = wallet_path
         conn = oracledb.connect(
             user=db_user,
@@ -303,4 +304,3 @@ def upload_relationships_to_oracle(csv_path, table_name, signer):
 
 if __name__ == "__main__":
     search_all_regions_and_save()
-
