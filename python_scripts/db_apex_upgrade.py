@@ -163,7 +163,7 @@ def extract_drop_statements(sql_text):
         r'(?i)\bDROP\s+(TABLE|INDEX|VIEW|MATERIALIZED\s+VIEW)\s+(?:"[^"]+"\.)?"[^";\s]+"\s*(CASCADE\s+CONSTRAINTS)?\s*;',
         re.IGNORECASE
     )
-    return [match.group(0).strip() for match in pattern.finditer(sql_text)]db py script update
+    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
 
 def file_checksum(path):
     hash_sha256 = hashlib.sha256()
