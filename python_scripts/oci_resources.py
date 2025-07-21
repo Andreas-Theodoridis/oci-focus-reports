@@ -160,6 +160,14 @@ def get_secret_value(secret_ocid, signer):
     bundle = secrets_client.get_secret_bundle(secret_id=secret_ocid)
     return base64.b64decode(bundle.data.secret_bundle_content.content).decode("utf-8")
 
+def log_and_execute(cursor, sql, params=None):
+    if params:
+        logging.info(f"➡️ Executing SQL:\n{sql}\nWith params: {params}")
+        cursor.execute(sql, params)
+    else:
+        logging.info(f"➡️ Executing SQL:\n{sql}")
+        cursor.execute(sql)
+
 
 def upload_csv_to_oracle(csv_path, table_name, signer):
     logging.info(f"🔼 Uploading CSV to Oracle DB: {csv_path}")
@@ -227,6 +235,12 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
             cursor.executemany(insert_sql, rows)
             conn.commit()
             logging.info(f"✅ Inserted {cursor.rowcount} rows into {table_name}")
+        with oracledb.connect(user=db_user, password=db_password, dsn=db_dsn) as final_conn:
+                final_cursor = final_conn.cursor()
+                log_and_execute(final_cursor, "BEGIN POPULATE_RESOURCE_RELATIONSHIPS_PROC; END;")
+                log_and_execute(final_cursor, "BEGIN POPULATE_OKE_RELATIONSHIPS_PROC; END;")
+                final_conn.commit()
+                final_cursor.close()
 
     except Exception as e:
         logging.error(f"❌ DB upload failed: {e}")

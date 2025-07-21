@@ -437,6 +437,32 @@ CREATE TABLE "OCI_FOCUS_REPORTS"."CREDIT_CONSUMPTION_STATE" (
 	 PRIMARY KEY ("WORKLOAD_NAME", "WEEK_START")
   USING INDEX  ENABLE
    )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+--------------------------------------------------------
+--  DDL for Table OCI_RESOURCE_RELATIONSHIPS
+--------------------------------------------------------
+CREATE TABLE "OCI_FOCUS_REPORTS"."OCI_RESOURCE_RELATIONSHIPS" (
+    "CHILD_DISPLAY_NAME"      VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "CHILD_RESOURCE_TYPE"     VARCHAR2(100) COLLATE "USING_NLS_COMP",
+    "PARENT_DISPLAY_NAME"     VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "PARENT_RESOURCE_TYPE"    VARCHAR2(100) COLLATE "USING_NLS_COMP",
+    "RAW_CREATED_BY"          VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "NORMALIZED_CREATED_BY"   VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "SNAPSHOT_DATE"           DATE DEFAULT SYSDATE
+);
+
+--------------------------------------------------------
+--  DDL for Table OCI_RESOURCE_OKE_RELATIONSHIPS
+--------------------------------------------------------
+CREATE TABLE "OCI_FOCUS_REPORTS"."OCI_RESOURCE_OKE_RELATIONSHIPS" (
+    "CHILD_DISPLAY_NAME"       VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "CHILD_RESOURCE_TYPE"      VARCHAR2(100) COLLATE "USING_NLS_COMP",
+    "PARENT_DISPLAY_NAME"      VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "PARENT_RESOURCE_TYPE"     VARCHAR2(100) COLLATE "USING_NLS_COMP",
+    "RAW_CLUSTER_ID"           VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "NORMALIZED_CLUSTER_ID"    VARCHAR2(1000) COLLATE "USING_NLS_COMP",
+    "SNAPSHOT_DATE"            DATE DEFAULT SYSDATE
+);
 --------------------------------------------------------
 --  DDL for Materialized View FILTER_VALUES_MV
 --------------------------------------------------------
@@ -514,6 +540,95 @@ BEGIN
   l_result := REPLACE(l_result, CHR(10), '\n');  -- line feed
   l_result := REPLACE(l_result, CHR(13), '');    -- carriage return
   RETURN l_result;
+END;
+/
+--------------------------------------------------------
+--  DDL for Procedure POPULATE_RESOURCE_RELATIONSHIPS_PROC
+--------------------------------------------------------
+CREATE OR REPLACE PROCEDURE "OCI_FOCUS_REPORTS"."POPULATE_RESOURCE_RELATIONSHIPS_PROC" IS
+BEGIN
+    -- Optional: Clear old data first
+    EXECUTE IMMEDIATE 'TRUNCATE TABLE OCI_RESOURCE_RELATIONSHIPS';
+
+    INSERT INTO OCI_FOCUS_REPORTS.OCI_RESOURCE_RELATIONSHIPS (
+        CHILD_DISPLAY_NAME,
+        CHILD_RESOURCE_TYPE,
+        PARENT_DISPLAY_NAME,
+        PARENT_RESOURCE_TYPE,
+        RAW_CREATED_BY,
+        NORMALIZED_CREATED_BY,
+        SNAPSHOT_DATE
+    )
+    SELECT 
+        child.DISPLAY_NAME,
+        child.RESOURCE_TYPE,
+        parent.DISPLAY_NAME,
+        parent.RESOURCE_TYPE,
+        JSON_VALUE(child.DEFINED_TAGS, '$."Oracle-Tags"."CreatedBy"'),
+        REGEXP_REPLACE(
+            JSON_VALUE(child.DEFINED_TAGS, '$."Oracle-Tags"."CreatedBy"'),
+            '^default/', 
+            ''
+        ),
+        SYSDATE
+    FROM 
+        OCI_FOCUS_REPORTS.OCI_RESOURCES_PY child
+    LEFT JOIN 
+        OCI_FOCUS_REPORTS.OCI_RESOURCES_PY parent
+        ON REGEXP_REPLACE(
+               JSON_VALUE(child.DEFINED_TAGS, '$."Oracle-Tags"."CreatedBy"'),
+               '^default/', 
+               ''
+           ) IN (parent.DISPLAY_NAME, parent.IDENTIFIER)
+    WHERE 
+        JSON_VALUE(child.DEFINED_TAGS, '$."Oracle-Tags"."CreatedBy"') IS NOT NULL;
+
+    COMMIT;
+END;
+/
+--------------------------------------------------------
+--  DDL for Procedure POPULATE_OKE_RELATIONSHIPS_PROC
+--------------------------------------------------------
+CREATE OR REPLACE PROCEDURE "OCI_FOCUS_REPORTS"."POPULATE_OKE_RELATIONSHIPS_PROC" IS
+BEGIN
+    -- Optional: Clear old data
+    EXECUTE IMMEDIATE 'TRUNCATE TABLE OCI_RESOURCE_OKE_RELATIONSHIPS';
+
+    INSERT INTO OCI_FOCUS_REPORTS.OCI_RESOURCE_OKE_RELATIONSHIPS (
+        CHILD_DISPLAY_NAME,
+        CHILD_RESOURCE_TYPE,
+        PARENT_DISPLAY_NAME,
+        PARENT_RESOURCE_TYPE,
+        RAW_CLUSTER_ID,
+        NORMALIZED_CLUSTER_ID,
+        SNAPSHOT_DATE
+    )
+    SELECT 
+        child.DISPLAY_NAME,
+        child.RESOURCE_TYPE,
+        parent.DISPLAY_NAME,
+        parent.RESOURCE_TYPE,
+        JSON_VALUE(child.SYSTEM_TAGS, '$."orcl-containerengine".Cluster'),
+        REGEXP_REPLACE(
+            JSON_VALUE(child.SYSTEM_TAGS, '$."orcl-containerengine".Cluster'),
+            '^default/',
+            ''
+        ),
+        SYSDATE
+    FROM 
+        OCI_FOCUS_REPORTS.OCI_RESOURCES_PY child
+    LEFT JOIN 
+        OCI_FOCUS_REPORTS.OCI_RESOURCES_PY parent
+        ON REGEXP_REPLACE(
+               JSON_VALUE(child.SYSTEM_TAGS, '$."orcl-containerengine".Cluster'),
+               '^default/',
+               ''
+           ) IN (parent.DISPLAY_NAME, parent.IDENTIFIER)
+    WHERE 
+        JSON_EXISTS(child.SYSTEM_TAGS, '$."orcl-containerengine".Cluster')
+        AND JSON_VALUE(child.SYSTEM_TAGS, '$."orcl-containerengine".Cluster') IS NOT NULL;
+
+    COMMIT;
 END;
 /
 --------------------------------------------------------
