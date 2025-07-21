@@ -821,7 +821,7 @@ BEGIN
     SUM(fr.BILLEDCOST),
     SUM(
       CASE
-        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY
+        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24) / (730 / 24)
         ELSE fr.USAGEQUANTITY / 24 / (730 / 24)
       END
     ),
