@@ -119,7 +119,7 @@ def search_all_regions_and_save():
                         "system-tags": system_tags,
                         "compartment-id": item.compartment_id,
                         "availability-domain": getattr(item, "availability_domain", "N/A"),
-                        "time-created": item.time_created.strftime('%Y-%m-%dT%H:%M:%S.%fZ') if item.time_created else None,
+                        "time-created": item.time_created.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] if item.time_created else None,
                         "additional-details": additional_details
                     })
 
@@ -169,24 +169,16 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
     cursor = None
 
     try:
-        # Fetch secret dynamically from Vault if specified
         db_password = db_pass
         if "pass_secret_ocid" in config.get("db_credentials", {}):
             db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
-        
-        os.environ['TNS_ADMIN'] = wallet_path
-        conn = oracledb.connect(
-            user=db_user,
-            password=db_password,
-            dsn=db_dsn
-        )
+
+        conn = oracledb.connect(user=db_user, password=db_password, dsn=db_dsn)
         cursor = conn.cursor()
 
-        # Truncate target table
         cursor.execute(f"TRUNCATE TABLE {table_name}")
         logging.info(f"🧹 Truncated table {table_name}")
 
-        # Read CSV and insert
         with open(csv_path, newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f, delimiter=';')
 
@@ -205,17 +197,39 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
             }
 
             columns = list(column_mapping.values())
-            placeholders = ", ".join([f":{i+1}" for i in range(len(columns))])
-            insert_sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
 
-            rows = [tuple(row[k] for k in column_mapping.keys()) for row in reader]
+            # Build correct placeholders with TO_TIMESTAMP for TIME_CREATED
+            placeholders = []
+            for idx, col in enumerate(columns):
+                bind_var = f":{idx + 1}"
+                if col == "TIME_CREATED":
+                    placeholders.append(f"TO_TIMESTAMP({bind_var}, 'YYYY-MM-DD HH24:MI:SS.FF3')")
+                else:
+                    placeholders.append(bind_var)
+
+            insert_sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+
+            # Prepare rows
+            rows = []
+            for row in reader:
+                values = []
+                for key in column_mapping.keys():
+                    val = row.get(key)
+                    if key == "time-created":
+                        if val.strip() == "":
+                            values.append(None)
+                        else:
+                            values.append(val.strip())  # already in correct format
+                    else:
+                        values.append(val)
+                rows.append(tuple(values))
+
             cursor.executemany(insert_sql, rows)
             conn.commit()
             logging.info(f"✅ Inserted {cursor.rowcount} rows into {table_name}")
 
     except Exception as e:
         logging.error(f"❌ DB upload failed: {e}")
-
     finally:
         if cursor:
             cursor.close()
@@ -225,4 +239,3 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
 
 if __name__ == "__main__":
     search_all_regions_and_save()
-
