@@ -189,6 +189,10 @@ def main():
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
 
+    # === Open patch file (must come before using patch_file) ===
+    patch_path = os.path.join(app_dir, "db_scripts", "patch.sql")
+    patch_file = open(patch_path, "w")
+
     # === Extract and write DROP statements from script ===
     drop_statements = extract_drop_statements(sql_text)
     if drop_statements:
@@ -203,9 +207,6 @@ def main():
     indexes = extract_object_ddls(sql_text, "INDEX")
     mvs = extract_object_ddls(sql_text, "MATERIALIZED VIEW")
     views = extract_object_ddls(sql_text, "VIEW")
-
-    patch_path = os.path.join(app_dir, "db_scripts", "patch.sql")
-    patch_file = open(patch_path, "w")
 
     os.environ['TNS_ADMIN'] = wallet_path
     conn = oracledb.connect(user=db_user, password=db_pass, dsn=db_dsn)
