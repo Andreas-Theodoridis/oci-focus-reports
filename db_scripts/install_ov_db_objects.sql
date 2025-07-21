@@ -790,7 +790,7 @@ BEGIN
     SUM(
       CASE
         WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24) / 7
-        ELSE fr.USAGEQUANTITY * 7 / 24
+        ELSE fr.USAGEQUANTITY / 24
       END
     ),
     SYSDATE
