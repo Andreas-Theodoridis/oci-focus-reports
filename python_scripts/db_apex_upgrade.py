@@ -201,6 +201,27 @@ def main():
     """, [target_schema])
     existing_objects = {(row[0].upper(), row[1].upper()) for row in cursor.fetchall()}
 
+    # Identify objects in DB that are not in the script and should be dropped
+    scripted_objects = set()
+    scripted_objects.update((name, "TABLE") for name in tables)
+    scripted_objects.update((name, "INDEX") for name in indexes)
+    scripted_objects.update((name, "MATERIALIZED VIEW") for name in mvs)
+    scripted_objects.update((name, "VIEW") for name in views)
+
+    objects_to_drop = existing_objects - scripted_objects
+
+    for obj_name, obj_type in sorted(objects_to_drop):
+        logging.info(f"🧹 Marking {obj_type} {obj_name} for drop (not in script)")
+        if obj_type == "TABLE":
+            patch_file.write(f'DROP TABLE "{target_schema}"."{obj_name}" CASCADE CONSTRAINTS;\n')
+        elif obj_type == "INDEX":
+            patch_file.write(f'DROP INDEX "{target_schema}"."{obj_name}";\n')
+        elif obj_type == "MATERIALIZED VIEW":
+            patch_file.write(f'DROP MATERIALIZED VIEW "{target_schema}"."{obj_name}";\n')
+        elif obj_type == "VIEW":
+            patch_file.write(f'DROP VIEW "{target_schema}"."{obj_name}";\n')
+
+
     # === Tables ===
     for table_name, ddl in tables.items():
         if (table_name, 'TABLE') not in existing_objects:

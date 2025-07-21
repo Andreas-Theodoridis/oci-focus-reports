@@ -31,7 +31,6 @@ compartment_ocid = config["comp_ocid"]
 log_file_pattern = config["resources_file_name_pattern"]
 
 resources_table = config["resources_table"]
-resource_relationship_table = config["resource_relationship_table"]
 db_user = config["db_user"]
 db_pass = config["db_password"]
 db_dsn = config["db_dsn"]
@@ -85,7 +84,6 @@ def search_all_regions_and_save():
         logging.info(f"🔁 Found {len(regions)} regions: {regions}")
 
         all_results = []
-        all_relationships = []
 
         for region in regions:
             logging.info(f"🌍 Switching to region: {region}")
@@ -108,6 +106,9 @@ def search_all_regions_and_save():
                 for item in items:
                     defined_tags = json.dumps(item.defined_tags or {})
                     freeform_tags = json.dumps(item.freeform_tags or {})
+                    system_tags = json.dumps(item.system_tags or {})
+                    additional_details = json.dumps(item.additional_details or {})
+
                     all_results.append({
                         "display-name": item.display_name,
                         "identifier": item.identifier,
@@ -115,39 +116,12 @@ def search_all_regions_and_save():
                         "resource-type": item.resource_type,
                         "defined-tags": defined_tags,
                         "freeform-tags": freeform_tags,
-                        "compartment-id": item.compartment_id
+                        "system-tags": system_tags,
+                        "compartment-id": item.compartment_id,
+                        "availability-domain": getattr(item, "availability_domain", "N/A"),
+                        "time-created": item.time_created.isoformat() if item.time_created else "N/A",
+                        "additional-details": additional_details
                     })
-                    related_resources = []
-
-                    fts_details = oci.resource_search.models.FreeTextSearchDetails(
-                        type="FreeText",
-                        text=item.identifier
-                    )
-
-                    try:
-                        fts_response = search_client.search_resources(fts_details)
-                        for related_item in fts_response.data.items:
-                            created_by = (
-                                related_item.defined_tags
-                                .get("Oracle-Tags", {})
-                                .get("CreatedBy")
-                            )
-
-                            if created_by == item.identifier and related_item.identifier != item.identifier:
-                                related_resources.append({
-                                    "parent_identifier": item.identifier,
-                                    "related_identifier": related_item.identifier,
-                                    "related_display_name": related_item.display_name or "N/A",
-                                    "related_resource_type": related_item.resource_type,
-                                    "related_compartment_id": related_item.compartment_id,
-                                    "related_region": region
-                                })
-
-                    except oci.exceptions.ServiceError as e:
-                        logging.warning(f"⚠️ Relationship search failed for {item.identifier}: {e}")
-
-                    # Add to a master list for later CSV export
-                    all_relationships.extend(related_resources)
 
                 logging.info(f"✅ {len(items)} items retrieved from {region}")
 
@@ -173,18 +147,6 @@ def search_all_regions_and_save():
 
             # === Upload to Oracle DB
             upload_csv_to_oracle(csv_file, resources_table, signer)
-        # === Save related resources to CSV
-        relationships_csv = os.path.join(output_dir, f"resource_relationships.csv")
-        if all_relationships:
-            fieldnames = all_relationships[0].keys()
-            with open(relationships_csv, "w", newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
-                writer.writeheader()
-                writer.writerows(all_relationships)
-            logging.info(f"📁 Relationships CSV written to {relationships_csv}")
-
-            # Upload to Oracle DB
-            upload_relationships_to_oracle(relationships_csv, resource_relationship_table, signer)
 
         else:
             logging.warning("⚠️ No data collected from any region.")
@@ -211,7 +173,7 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
         db_password = db_pass
         if "pass_secret_ocid" in config.get("db_credentials", {}):
             db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
-
+        
         os.environ['TNS_ADMIN'] = wallet_path
         conn = oracledb.connect(
             user=db_user,
@@ -235,7 +197,11 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
                 "resource-type": "RESOURCE_TYPE",
                 "defined-tags": "DEFINED_TAGS",
                 "freeform-tags": "FREEFORM_TAGS",
-                "compartment-id": "COMPARTMENT_ID"
+                "system-tags": "SYSTEM_TAGS",
+                "compartment-id": "COMPARTMENT_ID",
+                "availability-domain": "AVAILABILITY_DOMAIN",
+                "time-created": "TIME_CREATED",
+                "additional-details": "ADDITIONAL_DETAILS"
             }
 
             columns = list(column_mapping.values())
@@ -256,51 +222,7 @@ def upload_csv_to_oracle(csv_path, table_name, signer):
         if conn:
             conn.close()
 
-def upload_relationships_to_oracle(csv_path, table_name, signer):
-    logging.info(f"🔼 Uploading relationships CSV to Oracle DB: {csv_path}")
-    os.environ["TNS_ADMIN"] = wallet_path
-
-    conn = None
-    cursor = None
-
-    try:
-        db_password = db_pass
-        if "pass_secret_ocid" in config.get("db_credentials", {}):
-            db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer)
-
-        conn = oracledb.connect(user=db_user, password=db_password, dsn=db_dsn)
-        cursor = conn.cursor()
-
-        cursor.execute(f"TRUNCATE TABLE {table_name}")
-        logging.info(f"🧹 Truncated table {table_name}")
-
-        with open(csv_path, newline='', encoding='utf-8') as f:
-            reader = csv.DictReader(f, delimiter=';')
-
-            columns = [
-                "PARENT_IDENTIFIER",
-                "RELATED_IDENTIFIER",
-                "RELATED_DISPLAY_NAME",
-                "RELATED_RESOURCE_TYPE",
-                "RELATED_COMPARTMENT_ID",
-                "RELATED_REGION"
-            ]
-            placeholders = ", ".join([f":{i+1}" for i in range(len(columns))])
-            insert_sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
-
-            rows = [tuple(row[col.lower()] for col in columns) for row in reader]
-            cursor.executemany(insert_sql, rows)
-            conn.commit()
-            logging.info(f"✅ Inserted {cursor.rowcount} relationships into {table_name}")
-
-    except Exception as e:
-        logging.error(f"❌ Failed to upload relationships: {e}")
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
 
 if __name__ == "__main__":
     search_all_regions_and_save()
+
