@@ -119,7 +119,7 @@ def search_all_regions_and_save():
                         "system-tags": system_tags,
                         "compartment-id": item.compartment_id,
                         "availability-domain": getattr(item, "availability_domain", "N/A"),
-                        "time-created": item.time_created.strftime('%Y-%m-%d %H:%M:%S') if item.time_created else None,
+                        "time-created": item.time_created.strftime('%Y-%m-%dT%H:%M:%S.%fZ') if item.time_created else None,
                         "additional-details": additional_details
                     })
 
