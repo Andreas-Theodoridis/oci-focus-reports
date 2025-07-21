@@ -160,9 +160,10 @@ def execute_sql_script(script_path, user, password, dsn, description):
 
 def extract_drop_statements(sql_text):
     pattern = re.compile(
-        r'(?i)\bDROP\s+(TABLE|INDEX|VIEW|MATERIALIZED\s+VIEW)\s+(?:"[^"]+"\.)?"([^";\s]+)"\s*;'
+        r'(?i)\bDROP\s+(TABLE|INDEX|VIEW|MATERIALIZED\s+VIEW)\s+(?:"[^"]+"\.)?"[^";\s]+"\s*(CASCADE\s+CONSTRAINTS)?\s*;',
+        re.IGNORECASE
     )
-    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
+    return [match.group(0).strip() for match in pattern.finditer(sql_text)]db py script update
 
 def file_checksum(path):
     hash_sha256 = hashlib.sha256()
