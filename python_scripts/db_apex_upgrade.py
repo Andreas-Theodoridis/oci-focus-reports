@@ -158,6 +158,12 @@ def execute_sql_script(script_path, user, password, dsn, description):
         logging.error(f"❌ Error while executing {description}:")
         logging.error(e.stderr)
 
+def extract_drop_statements(sql_text):
+    pattern = re.compile(
+        r'(?i)\bDROP\s+(TABLE|INDEX|VIEW|MATERIALIZED\s+VIEW)\s+(?:"[^"]+"\.)?"([^";\s]+)"\s*;'
+    )
+    return [match.group(0).strip() for match in pattern.finditer(sql_text)]
+
 def file_checksum(path):
     hash_sha256 = hashlib.sha256()
     with open(path, "rb") as f:
@@ -183,6 +189,16 @@ def main():
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
 
+    # === Extract and write DROP statements from script ===
+    drop_statements = extract_drop_statements(sql_text)
+    if drop_statements:
+        logging.info(f"🗑️ Found {len(drop_statements)} DROP statements in the script.")
+        patch_file.write("-- DROP statements from script\n")
+        for stmt in drop_statements:
+            patch_file.write(stmt + "\n")
+        patch_file.write("\n")
+
+    # === Extract objects from script ===
     tables = extract_object_ddls(sql_text, "TABLE")
     indexes = extract_object_ddls(sql_text, "INDEX")
     mvs = extract_object_ddls(sql_text, "MATERIALIZED VIEW")
