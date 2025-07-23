@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR="/home/opc/oci-focus-reports/python_scripts"
+LOG_FILE="/home/opc/oci-focus-reports/logs/initial_load_scripts_log_$(date +%Y%m%d_%H%M%S).log"
 
 declare -a scripts=(
     "availability_metrics_initial_load.py"
@@ -10,25 +11,29 @@ declare -a scripts=(
     "focus_reports_initial_load.py"
 )
 
-# Prompt for EXA
-echo "❓ Do you want to run oci_exa_maintenance_details.py? (y/n): "
-read -r run_exa
-
-echo "🔁 Starting execution of reporting scripts..."
-
-for script in "${scripts[@]}"; do
-    echo "🚀 Running $script..."
-    python3 "$SCRIPT_DIR/$script"
-    echo "✅ Finished $script"
-    echo ""
-done
-
-if [[ "$run_exa" =~ ^[Yy]$ ]]; then
-    echo "🚀 Running oci_exa_maintenance_details.py..."
-    python3 "$SCRIPT_DIR/oci_exa_maintenance_details.py"
-    echo "✅ Finished oci_exa_maintenance_details.py"
-else
-    echo "⏭️ Skipped oci_exa_maintenance_details.py"
+# Handle command-line argument for EXA maintenance
+RUN_EXA="n"
+if [[ "$1" == "--run-exa" ]]; then
+    RUN_EXA="y"
 fi
 
-echo "🎉 All done!"
+{
+    echo "🔁 Starting execution of reporting scripts..."
+
+    for script in "${scripts[@]}"; do
+        echo "🚀 Running $script..."
+        python3 "$SCRIPT_DIR/$script"
+        echo "✅ Finished $script"
+        echo ""
+    done
+
+    if [[ "$RUN_EXA" =~ ^[Yy]$ ]]; then
+        echo "🚀 Running oci_exa_maintenance_details.py..."
+        python3 "$SCRIPT_DIR/oci_exa_maintenance_details.py"
+        echo "✅ Finished oci_exa_maintenance_details.py"
+    else
+        echo "⏭️ Skipped oci_exa_maintenance_details.py"
+    fi
+
+    echo "🎉 All done!"
+} >> "$LOG_FILE" 2>&1
