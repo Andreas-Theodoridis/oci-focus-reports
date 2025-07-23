@@ -75,3 +75,5 @@ EXCEPTION
     DBMS_OUTPUT.PUT_LINE('Error creating scheduler job: ' || SQLERRM);
     ROLLBACK;
 END;
+/
+EXIT
