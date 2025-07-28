@@ -2362,6 +2362,212 @@ BEGIN
 END;
 /
 --------------------------------------------------------
+--  DDL for Function get_cost_pivot_6_months_html
+--------------------------------------------------------
+create or replace FUNCTION OCI_FOCUS_REPORTS.get_cost_pivot_6_months_html (
+    p_tenant             IN VARCHAR2,
+    p_subscription_id    IN VARCHAR2,
+    p_region             IN VARCHAR2,
+    p_compartment        IN VARCHAR2,
+    p_service_category   IN VARCHAR2,
+    p_service_name       IN VARCHAR2,
+    p_charge_description IN VARCHAR2,
+    p_resource_type      IN VARCHAR2,
+    p_resource_name      IN VARCHAR2
+) RETURN CLOB IS
+    v_html     CLOB := '';
+    v_cost     NUMBER := 0;
+    TYPE cost_map_type IS TABLE OF NUMBER INDEX BY VARCHAR2(500);
+    v_totals   cost_map_type;
+    v_key      VARCHAR2(500);
+BEGIN
+    v_html := '<table class="pivot-table" border="1"><thead><tr><th rowspan="3">Month</th>';
+
+    -- First header row: categories
+    FOR cat_rec IN (
+        SELECT category, COUNT(*) AS desc_count
+        FROM (
+            SELECT DISTINCT NVL(SERVICECATEGORY,'None') category, NVL(CHARGEDESCRIPTION,'Unknown') description, NVL(SKUID, 'Unknown') sku
+            FROM COST_USAGE_TIMESERIES_MONTHLY
+            WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+              AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+              AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+              AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+              AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+              AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+              AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+              AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+              AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+              AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        )
+        GROUP BY category
+        ORDER BY category
+    ) LOOP
+        SELECT COUNT(*) INTO v_cost FROM (
+            SELECT DISTINCT NVL(SERVICECATEGORY,'None') category, NVL(CHARGEDESCRIPTION,'Unknown') description, NVL(SKUID, 'Unknown') sku
+            FROM COST_USAGE_TIMESERIES_MONTHLY
+            WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+              AND NVL(SERVICECATEGORY,'None') = cat_rec.category
+              AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+              AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+              AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+              AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+              AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+              AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+              AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+              AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+              AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        );
+        v_html := v_html || '<th colspan="'||v_cost||'">'||cat_rec.category||'</th>';
+    END LOOP;
+
+    v_html := v_html || '</tr><tr>';
+
+    -- Second header row: descriptions
+    FOR desc_rec IN (
+        SELECT DISTINCT NVL(SERVICECATEGORY,'None') category, NVL(CHARGEDESCRIPTION,'Unknown') description, NVL(SKUID, 'Unknown') sku
+        FROM COST_USAGE_TIMESERIES_MONTHLY
+        WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY category, description
+    ) LOOP
+        v_html := v_html || '<th>'||desc_rec.description||'</th>';
+    END LOOP;
+
+    v_html := v_html || '</tr><tr>';
+
+    -- Third header row: SKUs
+    FOR sku_rec IN (
+        SELECT DISTINCT NVL(SERVICECATEGORY,'None') category, NVL(CHARGEDESCRIPTION,'Unknown') description, NVL(SKUID, 'Unknown') sku
+        FROM COST_USAGE_TIMESERIES_MONTHLY
+        WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY category, description
+    ) LOOP
+        v_html := v_html || '<th>'||sku_rec.sku||'</th>';
+    END LOOP;
+
+    v_html := v_html || '</tr></thead><tbody>';
+    -- The rest of the function (rows, data, and totals) continues as before
+    FOR rec IN (
+        SELECT DISTINCT DATE_BUCKET
+        FROM COST_USAGE_TIMESERIES_MONTHLY
+        WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY DATE_BUCKET
+    ) LOOP
+        v_html := v_html || '<tr><td>' || TO_CHAR(rec.DATE_BUCKET, 'Mon YY') || '</td>';
+
+        FOR col_rec IN (
+            SELECT DISTINCT NVL(SERVICECATEGORY,'None') category, NVL(CHARGEDESCRIPTION,'Unknown') description
+            FROM COST_USAGE_TIMESERIES_MONTHLY
+            WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+              AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+              AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+              AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+              AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+              AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+              AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+              AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+              AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+              AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+            ORDER BY category, description
+        ) LOOP
+            BEGIN
+                SELECT COALESCE(SUM(COST),0)
+                INTO v_cost
+                FROM COST_USAGE_TIMESERIES_MONTHLY
+                WHERE DATE_BUCKET = rec.DATE_BUCKET
+                  AND ROUND(COST, 2) != 0
+                  AND NVL(SERVICECATEGORY,'None') = col_rec.category
+                  AND NVL(CHARGEDESCRIPTION,'Unknown') = col_rec.description
+                  AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+                  AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+                  AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+                  AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+                  AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+                  AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+                  AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+                  AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+                  AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL);
+            EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                    v_cost := 0;
+            END;
+
+            v_key := NVL(col_rec.category, 'None') || '|' || NVL(col_rec.description, 'Unknown');
+            IF v_totals.EXISTS(v_key) THEN
+                v_totals(v_key) := v_totals(v_key) + v_cost;
+            ELSE
+                v_totals(v_key) := v_cost;
+            END IF;
+
+            v_html := v_html || '<td>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G999G990D00') END || '</td>';
+        END LOOP;
+
+        v_html := v_html || '</tr>';
+    END LOOP;
+
+    v_html := v_html || '<tr><td><b>Total</b></td>';
+
+    FOR col_rec IN (
+        SELECT DISTINCT NVL(SERVICECATEGORY,'None') category, NVL(CHARGEDESCRIPTION,'Unknown') description
+        FROM COST_USAGE_TIMESERIES_MONTHLY
+        WHERE DATE_BUCKET >= ADD_MONTHS(TRUNC(SYSDATE,'MM'),-6)
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY category, description
+    ) LOOP
+        v_key := NVL(col_rec.category, 'None') || '|' || NVL(col_rec.description, 'Unknown');
+        IF v_totals.EXISTS(v_key) THEN
+            v_cost := v_totals(v_key);
+        ELSE
+            v_cost := 0;
+        END IF;
+        v_html := v_html || '<td><b>' ||
+            CASE
+                WHEN NVL(v_totals(col_rec.category || '|' || col_rec.description), 0) < 1
+                THEN '0' || TO_CHAR(NVL(v_totals(col_rec.category || '|' || col_rec.description), 0), 'FM.00')
+                ELSE TO_CHAR(NVL(v_totals(col_rec.category || '|' || col_rec.description), 0), 'FM999G999G999G999G990D00')
+            END || '</b></td>';
+    END LOOP;
+
+    v_html := v_html || '</tr></tbody></table>';
+    RETURN v_html;
+END;
+/
+--------------------------------------------------------
 --  DDL for Function usage_pivot_dynamic_daily_html
 --------------------------------------------------------
 create or replace FUNCTION OCI_FOCUS_REPORTS.usage_pivot_dynamic_daily_html (
