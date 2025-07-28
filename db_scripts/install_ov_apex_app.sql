@@ -33,7 +33,7 @@ prompt APPLICATION 1200 - Focus Cost Reporting
 -- Application Export:
 --   Application:     1200
 --   Name:            Focus Cost Reporting
---   Date and Time:   12:06 Monday July 28, 2025
+--   Date and Time:   17:41 Monday July 28, 2025
 --   Exported By:     OCI_FOCUS_REPORTS
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -121,7 +121,7 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_value_01=>'Focus Cost Reporting'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>1283
-,p_version_scn=>45158023628845
+,p_version_scn=>45165970505184
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
@@ -7752,6 +7752,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_template_options=>'#DEFAULT#:js-dialog-size600x400'
 ,p_plug_template=>1485369341786500999
 ,p_plug_display_sequence=>30
+,p_plug_display_point=>'REGION_POSITION_05'
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -16475,7 +16476,7 @@ wwv_flow_imp_page.create_report_region(
 ,p_name=>'Select Chat'
 ,p_region_name=>'select-chat-region'
 ,p_template=>wwv_flow_imp.id(20494277378089660)
-,p_display_sequence=>20
+,p_display_sequence=>30
 ,p_region_template_options=>'#DEFAULT#:t-Region--removeHeader js-removeLandmark:t-Region--noBorder:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
 ,p_new_grid_row=>false
@@ -16560,7 +16561,7 @@ wwv_flow_imp_page.create_report_region(
 ,p_name=>'ChatBot'
 ,p_region_name=>'chat-report'
 ,p_template=>wwv_flow_imp.id(20494277378089660)
-,p_display_sequence=>50
+,p_display_sequence=>40
 ,p_region_template_options=>'#DEFAULT#:t-Region--removeHeader js-removeLandmark:t-Region--noBorder:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
 ,p_new_grid_row=>false
@@ -16688,7 +16689,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_name=>'data-report-dialog'
 ,p_region_template_options=>'#DEFAULT#:js-dialog-size600x400'
 ,p_plug_template=>2672673746673652531
-,p_plug_display_sequence=>60
+,p_plug_display_sequence=>40
 ,p_location=>null
 ,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -16987,7 +16988,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_name=>'chart-report-dialog'
 ,p_region_template_options=>'#DEFAULT#:js-dialog-autoheight:js-dialog-size600x400'
 ,p_plug_template=>2672673746673652531
-,p_plug_display_sequence=>70
+,p_plug_display_sequence=>50
 ,p_location=>null
 ,p_plug_source_type=>'NATIVE_DISPLAY_SELECTOR'
 ,p_ai_enabled=>false
@@ -17795,7 +17796,8 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Conversation Management'
 ,p_region_template_options=>'#DEFAULT#:t-Region--removeHeader js-removeLandmark:t-Region--noBorder:t-Region--scrollBody'
 ,p_plug_template=>wwv_flow_imp.id(20494277378089660)
-,p_plug_display_sequence=>10
+,p_plug_display_sequence=>20
+,p_plug_grid_column_span=>2
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="chat-action-icons">',
@@ -17847,7 +17849,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'SelectChatRegion'
 ,p_region_template_options=>'#DEFAULT#:js-dialog-size600x400'
 ,p_plug_template=>2672673746673652531
-,p_plug_display_sequence=>80
+,p_plug_display_sequence=>60
 ,p_location=>null
 ,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -17861,7 +17863,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_name=>'sql-dialog-region'
 ,p_region_template_options=>'#DEFAULT#:js-dialog-autoheight:js-dialog-size600x400'
 ,p_plug_template=>2672673746673652531
-,p_plug_display_sequence=>90
+,p_plug_display_sequence=>70
 ,p_location=>null
 ,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -19118,20 +19120,41 @@ wwv_flow_imp_page.create_page_plug(
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_html   CLOB;',
+'    l_offset NUMBER := 1;',
+'    l_chunk  VARCHAR2(32767);',
 'BEGIN',
-'  HTP.PRN(''<div id="pivot-wrapper">'');',
-'  HTP.PRN(get_cost_pivot_6_months_html(',
-'    :P3_TENANT,',
-'    :P3_SUBSCRIPTION_ID,',
-'    :P3_REGION,',
-'    :P3_SELECT_COMPARTMENT,',
-'    :P3_SERVICE_CATEGORY,',
-'    :P3_SERVICE_NAME,',
-'    :P3_CHARGEDESCRIPTION,',
-'    :P3_RESOURCE_TYPE,',
-'    :P3_RESOURCE_NAME',
-'  ));',
-'  HTP.PRN(''</div>'');',
+'    -- Generate the CLOB using your function (with APEX page items as bind variables)',
+'    l_html := OCI_FOCUS_REPORTS.cost_pivot_dynamic_monthly_html(',
+'        p_tenant             => :P3_TENANT,',
+'        p_subscription_id    => :P3_SUBSCRIPTION_ID,',
+'        p_region             => :P3_REGION,',
+'        p_compartment        => :P3_SELECT_COMPARTMENT,',
+'        p_service_category   => :P3_SERVICE_CATEGORY,',
+'        p_service_name       => :P3_SERVICE_NAME,',
+'        p_charge_description => :P3_CHARGEDESCRIPTION,',
+'        p_resource_type      => :P3_RESOURCE_TYPE,',
+'        p_resource_name      => :P3_RESOURCE_NAME,',
+'        p_fromdate           => TO_CHAR(TRUNC(ADD_MONTHS(SYSDATE, -6), ''MM''), ''DD-MON-YYYY HH24:MI:SS''),',
+'        p_todate             => TO_CHAR(LAST_DAY(SYSDATE), ''DD-MON-YYYY HH24:MI:SS''),',
+'        p_group_level1       => ''SERVICECATEGORY'',',
+'        p_group_level2       => ''CHARGEDESCRIPTION'',',
+'        p_group_level3       => ''SKUID''',
+'    );',
+'',
+'    -- Output opening wrapper',
+'    HTP.PRN(''<div class="pivot-wrapper">'');',
+'',
+'    -- Output the CLOB in safe chunks',
+'    WHILE l_offset <= DBMS_LOB.getlength(l_html) LOOP',
+'        l_chunk := DBMS_LOB.SUBSTR(l_html, 32767, l_offset);',
+'        HTP.PRN(l_chunk);',
+'        l_offset := l_offset + 32767;',
+'    END LOOP;',
+'',
+'    -- Output closing wrapper',
+'    HTP.PRN(''</div>'');',
 'END;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
@@ -23135,20 +23158,41 @@ wwv_flow_imp_page.create_page_plug(
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_html   CLOB;',
+'    l_offset NUMBER := 1;',
+'    l_chunk  VARCHAR2(32767);',
 'BEGIN',
-'  HTP.PRN(''<div id="pivot-wrapper">'');',
-'  HTP.PRN(get_cost_pivot_6_months_html(',
-'    :P5_TENANT,',
-'    :P5_SUBSCRIPTION_ID,',
-'    :P5_REGION,',
-'    :P5_SELECT_COMPARTMENT,',
-'    :P5_SERVICE_CATEGORY,',
-'    :P5_SERVICE_NAME,',
-'    :P5_CHARGEDESCRIPTION,',
-'    :P5_RESOURCE_TYPE,',
-'    :P5_RESOURCE_NAME',
-'  ));',
-'  HTP.PRN(''</div>'');',
+'    -- Generate the CLOB using your function (with APEX page items as bind variables)',
+'    l_html := OCI_FOCUS_REPORTS.cost_pivot_dynamic_monthly_html(',
+'        p_tenant             => :P5_TENANT,',
+'        p_subscription_id    => :P5_SUBSCRIPTION_ID,',
+'        p_region             => :P5_REGION,',
+'        p_compartment        => :P5_SELECT_COMPARTMENT,',
+'        p_service_category   => :P5_SERVICE_CATEGORY,',
+'        p_service_name       => :P5_SERVICE_NAME,',
+'        p_charge_description => :P5_CHARGEDESCRIPTION,',
+'        p_resource_type      => :P5_RESOURCE_TYPE,',
+'        p_resource_name      => :P5_RESOURCE_NAME,',
+'        p_fromdate           => TO_CHAR(TRUNC(ADD_MONTHS(SYSDATE, -6), ''MM''), ''DD-MON-YYYY HH24:MI:SS''),',
+'        p_todate             => TO_CHAR(LAST_DAY(SYSDATE), ''DD-MON-YYYY HH24:MI:SS''),',
+'        p_group_level1       => ''SERVICECATEGORY'',',
+'        p_group_level2       => ''CHARGEDESCRIPTION'',',
+'        p_group_level3       => ''SKUID''',
+'    );',
+'',
+'    -- Output opening wrapper',
+'    HTP.PRN(''<div class="pivot-wrapper">'');',
+'',
+'    -- Output the CLOB in safe chunks',
+'    WHILE l_offset <= DBMS_LOB.getlength(l_html) LOOP',
+'        l_chunk := DBMS_LOB.SUBSTR(l_html, 32767, l_offset);',
+'        HTP.PRN(l_chunk);',
+'        l_offset := l_offset + 32767;',
+'    END LOOP;',
+'',
+'    -- Output closing wrapper',
+'    HTP.PRN(''</div>'');',
 'END;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
