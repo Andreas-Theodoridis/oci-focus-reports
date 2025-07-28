@@ -175,31 +175,39 @@ def file_checksum(path):
 # === Main ===
 def main():
     import oci
+    logging.info("🔐 Initializing OCI signer for secret access...")
     signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
 
     if config.get("use_test_credentials", False):
+        logging.info("🧪 Using test credentials from config.")
         db_user = config["test_credentials"]["user"]
         db_pass = config["test_credentials"]["password"]
         db_dsn = config["test_credentials"]["dsn"]
     else:
+        logging.info("🔑 Fetching production DB credentials from OCI Secrets.")
         db_conf = config["db_credentials"]
         db_user = db_conf["user"]
         db_pass = get_secret_value(db_conf["pass_secret_ocid"], signer)
         db_dsn = db_conf["dsn"]
 
+    logging.info(f"📄 Reading SQL script from: {sql_file_path}")
     with open(sql_file_path, 'r') as f:
         sql_text = f.read()
 
-    # === Open patch file (must come before using patch_file) ===
+    # Open patch file
     patch_path = os.path.join(app_dir, "db_scripts", "patch.sql")
     patch_file = open(patch_path, "w")
+    logging.info(f"📝 Patch file opened for writing at: {patch_path}")
 
-    # === Establish DB connection BEFORE drop checking ===
+    # DB connection
+    logging.info("🔌 Connecting to Oracle DB...")
     os.environ['TNS_ADMIN'] = wallet_path
     conn = oracledb.connect(user=db_user, password=db_pass, dsn=db_dsn)
     cursor = conn.cursor()
+    logging.info("✅ Connected to database.")
 
-    # === Extract and write DROP statements from script ===
+    # DROP statements
+    logging.info("🔍 Extracting DROP statements...")
     drop_statements = extract_drop_statements(sql_text)
     if drop_statements:
         logging.info(f"🗑️ Found {len(drop_statements)} DROP statements in the script.")
@@ -221,28 +229,35 @@ def main():
                 else:
                     logging.info(f"  ❌ Object not found, skipping DROP: {stmt}")
         patch_file.write("\n")
+    else:
+        logging.info("ℹ️ No DROP statements found.")
 
-    # === Extract objects from script ===
+    # Extract objects
+    logging.info("📦 Extracting object DDLs from script...")
     tables = extract_object_ddls(sql_text, "TABLE")
     indexes = extract_object_ddls(sql_text, "INDEX")
     mvs = extract_object_ddls(sql_text, "MATERIALIZED VIEW")
     views = extract_object_ddls(sql_text, "VIEW")
 
+    logging.info("🔎 Checking for existing DB objects...")
     cursor.execute("""
     SELECT object_name, object_type FROM all_objects
     WHERE owner = :1 AND object_type IN ('TABLE', 'INDEX', 'MATERIALIZED VIEW', 'VIEW')
     """, [target_schema])
     existing_objects = {(row[0].upper(), row[1].upper()) for row in cursor.fetchall()}
 
-    # === Tables ===
+    # Tables
+    logging.info(f"📋 Comparing and updating table definitions...")
     for table_name, ddl in tables.items():
         if (table_name, 'TABLE') not in existing_objects:
+            logging.info(f"➕ New table: {table_name}")
             patch_file.write(ddl + "\n")
             continue
         db_columns = get_table_columns(cursor, table_name)
         script_columns = parse_columns_from_script(ddl)
         for col, col_def in script_columns.items():
             if col not in db_columns:
+                logging.info(f"🆕 Adding column: {table_name}.{col}")
                 patch_file.write(f'ALTER TABLE "{target_schema}"."{table_name}" ADD ({col} {col_def});\n')
             else:
                 db_type = db_columns[col][0]
@@ -252,37 +267,47 @@ def main():
                         script_len = int(match.group(1))
                         db_len = db_columns[col][1] or 0
                         if script_len > db_len:
+                            logging.info(f"✏️ Modifying column length: {table_name}.{col}")
                             patch_file.write(f'ALTER TABLE "{target_schema}"."{table_name}" MODIFY ({col} {col_def});\n')
 
-    # === Indexes ===
+    # Indexes
+    logging.info("📌 Processing indexes...")
     for index_name, ddl in indexes.items():
         db_ddl = get_object_ddl(cursor, "INDEX", index_name)
         if db_ddl is None or not compare_ddl(ddl, db_ddl):
+            logging.info(f"🔁 Replacing index: {index_name}")
             patch_file.write(f'DROP INDEX "{target_schema}"."{index_name}";\n{ddl}\n')
 
-    # === Materialized Views ===
+    # MVs
+    logging.info("📊 Processing materialized views...")
     for mv_name, ddl in mvs.items():
         db_ddl = get_object_ddl(cursor, "MATERIALIZED_VIEW", mv_name)
         if db_ddl is None or not compare_ddl(ddl, db_ddl):
+            logging.info(f"🔁 Replacing materialized view: {mv_name}")
             patch_file.write(f'DROP MATERIALIZED VIEW "{target_schema}"."{mv_name}";\n{ddl}\n')
 
-    # === Procedures & Functions ===
+    # Procedures & Functions
+    logging.info("📂 Writing procedures and functions...")
     for proc in extract_procedure_ddls(sql_text):
+        logging.info("➕ Adding procedure.")
         patch_file.write(f"{proc}\n/\n\n")
-
     for func in extract_function_ddls(sql_text):
+        logging.info("➕ Adding function.")
         patch_file.write(f"{func}\n/\n\n")
 
-    # === Inserts for AI tables ===
+    # Inserts
+    logging.info("📥 Writing INSERT statements for AI tables...")
     target_insert_tables = ["AI_PROMPT_COMPONENTS", "AI_PROMPT_EXAMPLES"]
     inserts = extract_insert_statements(sql_text, target_insert_tables)
     for table, stmts in inserts.items():
         if stmts:
+            logging.info(f"🔄 Inserting data into table: {table}")
             patch_file.write(f'TRUNCATE TABLE "{target_schema}"."{table}";\n')
             for stmt in stmts:
                 patch_file.write(f"{stmt}\n")
 
-    # === Execute selected procedures at the end ===
+    # Procedures to execute
+    logging.info("🚦 Appending procedure executions to patch...")
     procedures_to_run = [
         "PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC",
         "PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC",
@@ -293,23 +318,23 @@ def main():
         "POPULATE_RESOURCE_RELATIONSHIPS_PROC",
         "POPULATE_OKE_RELATIONSHIPS_PROC"
     ]
-
     patch_file.write("-- Execute procedures\n")
     for proc in procedures_to_run:
         patch_file.write(f"BEGIN {proc}; END;\n/\n")
-    patch_file.write("\n")
-
-    patch_file.write("COMMIT;\nEXIT;\n")
+    patch_file.write("\nCOMMIT;\nEXIT;\n")
     patch_file.close()
+    logging.info("✅ Patch file finalized and closed.")
+
     cursor.close()
     conn.close()
-    logging.info("✅ Patch file written to db_scripts/patch.sql")
+    logging.info("🔌 Database connection closed.")
 
-    # === Execute patch.sql if user agrees ===
+    # Patch execution
     if input("❓ Do you want to apply patch.sql to the database? (y/N): ").strip().lower() == 'y':
         execute_sql_script(patch_path, db_user, db_pass, db_dsn, "patch.sql")
 
-    # === Execute install_ov_apex_app.sql if file has changed and user agrees ===
+    # APEX install
+    logging.info("🧮 Checking for APEX app install changes...")
     apex_path = os.path.join(app_dir, "db_scripts", "install_ov_apex_app.sql")
     checksum_path = os.path.join(app_dir, "db_scripts", ".apex_app_checksum")
     current_checksum = file_checksum(apex_path)
@@ -320,13 +345,13 @@ def main():
             previous_checksum = f.read().strip()
 
     if current_checksum != previous_checksum:
-        print("🔍 Detected change in install_ov_apex_app.sql.")
+        logging.info("🔍 Detected change in install_ov_apex_app.sql.")
         if input("❓ Do you want to install/update APEX app? (y/N): ").strip().lower() == 'y':
             execute_sql_script(apex_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
             with open(checksum_path, "w") as f:
                 f.write(current_checksum)
     else:
-        print("✅ No changes detected in install_ov_apex_app.sql. Skipping APEX install.")
+        logging.info("✅ No changes detected in APEX app script. Skipping.")
 
 if __name__ == "__main__":
     main()
