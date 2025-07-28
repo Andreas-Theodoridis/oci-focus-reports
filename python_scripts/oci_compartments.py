@@ -77,9 +77,11 @@ def get_secret_value(secret_ocid, signer):
     secrets_client = oci.secrets.SecretsClient({}, signer=signer)
     bundle = secrets_client.get_secret_bundle(secret_id=secret_ocid)
     base64_secret = bundle.data.secret_bundle_content.content
+    logging.info("✅ Secret retrieved.")
     return base64.b64decode(base64_secret).decode("utf-8")
 
 def build_compartment_hierarchy(compartments):
+    logging.info("🧭 Building compartment hierarchy...")
     """Builds a hierarchy from the compartment list, supporting multiple levels"""
     hierarchy = {}
 
@@ -107,18 +109,27 @@ def build_compartment_hierarchy(compartments):
         comp["Path"] = get_path(comp["Compartment ID"])
         hierarchy[comp["Compartment ID"]] = comp
 
+    logging.info("✅ Compartment hierarchy built.")
     return list(hierarchy.values())  # Convert back to list
 
 def get_all_compartments():
+    logging.info("🌐 Fetching all compartments from OCI (with pagination)...")
+    
     signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
     identity_client = oci.identity.IdentityClient({}, signer=signer)
 
     tenancy_ocid = compartment_ocid
     compartments = []
 
-    response = identity_client.list_compartments(tenancy_ocid, compartment_id_in_subtree=True, access_level="ACCESSIBLE")
+    # This handles pagination automatically
+    list_response = oci.pagination.list_call_get_all_results(
+        identity_client.list_compartments,
+        compartment_id=tenancy_ocid,
+        compartment_id_in_subtree=True,
+        access_level="ACCESSIBLE"
+    )
 
-    for compartment in response.data:
+    for compartment in list_response.data:
         compartments.append({
             "Compartment ID": compartment.id,
             "Name": compartment.name,
@@ -126,11 +137,13 @@ def get_all_compartments():
             "Lifecycle State": compartment.lifecycle_state,
             "Time Created": str(compartment.time_created),
             "Parent ID": compartment.compartment_id,
-            "Parent": compartments[-1]["Name"] if compartments else None  # Assign the previous compartment's name as parent
+            "Parent": None  # You'll build proper hierarchy later
         })
 
+    logging.info(f"✅ Retrieved {len(compartments)} compartments (all pages).")
+
     hierarchy = build_compartment_hierarchy(compartments)
-    return hierarchy  # Return as a list of dictionaries
+    return hierarchy
 
 def convert_json_to_csv(data):
     """Convert a list of JSON objects to CSV format"""
@@ -145,10 +158,12 @@ def convert_json_to_csv(data):
     csv_writer = csv.DictWriter(output, fieldnames=fieldnames)
     csv_writer.writeheader()
     csv_writer.writerows(data)
+    logging.info("✅ Conversion to CSV complete.")
     output.seek(0)
     return output.getvalue()
 
 def write_csv_locally(csv_data, file_path):
+    logging.info(f"💾 Writing CSV locally to {file_path}...")
     """Write CSV data to a local file"""
     with open(file_path, 'w', newline='') as csv_file:
         csv_file.write(csv_data)

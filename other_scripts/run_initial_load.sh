@@ -27,6 +27,8 @@ fi
         echo ""
     done
 
+    rm -Rf /home/opc/oci-focus-reports/data/*
+
     if [[ "$RUN_EXA" =~ ^[Yy]$ ]]; then
         echo "🚀 Running oci_exa_maintenance_details.py..."
         python3 "$SCRIPT_DIR/oci_exa_maintenance_details.py"

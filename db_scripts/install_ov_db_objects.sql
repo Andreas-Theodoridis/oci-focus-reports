@@ -734,7 +734,7 @@ END;
 --------------------------------------------------------
 set define off;
 
-  CREATE OR REPLACE PROCEDURE OCI_FOCUS_REPORTS.REFRESH_COST_USAGE_TS_PROC AS
+create or replace PROCEDURE OCI_FOCUS_REPORTS.REFRESH_COST_USAGE_TS_PROC AS
 BEGIN
   -- Truncate all three tables
   EXECUTE IMMEDIATE 'TRUNCATE TABLE COST_USAGE_TIMESERIES_DAILY';
@@ -766,6 +766,8 @@ BEGIN
   LEFT JOIN OCI_RESOURCES_PY orp ON fr.RESOURCEID = orp.IDENTIFIER
   LEFT JOIN OCI_COMPARTMENTS_PY ocp ON fr.OCI_COMPARTMENTID = ocp.COMPARTMENT_ID
   WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
+  AND fr.BILLEDCOST>0
+  AND fr.USAGEQUANTITY>0
   GROUP BY
     TRUNC(fr.CHARGEPERIODSTART, 'DDD'),
     fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
@@ -773,7 +775,7 @@ BEGIN
     orp.DISPLAY_NAME, fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME,
     ocp.PATH, fr.USAGEUNIT;
 
-  -- Repeat for WEEK
+    -- Weekly (aggregate from DAILY — no normalization)
   INSERT INTO COST_USAGE_TIMESERIES_WEEKLY (
     DATE_BUCKET, BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
     SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
@@ -781,31 +783,19 @@ BEGIN
     COST, USAGE, LAST_REFRESH
   )
   SELECT
-    TRUNC(fr.CHARGEPERIODSTART, 'IW'),
-    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
-    NVL(fr.SERVICECATEGORY, 'None'), fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
-    orp.DISPLAY_NAME AS RESOURCENAME,
-    fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, ocp.PATH, fr.USAGEUNIT,
-    SUM(fr.BILLEDCOST),
-    SUM(
-      CASE
-        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY * (730 / 24) / 7
-        ELSE fr.USAGEQUANTITY / 24
-      END
-    ),
-    SYSDATE
-  FROM FOCUS_REPORTS_PY fr
-  LEFT JOIN OCI_RESOURCES_PY orp ON fr.RESOURCEID = orp.IDENTIFIER
-  LEFT JOIN OCI_COMPARTMENTS_PY ocp ON fr.OCI_COMPARTMENTID = ocp.COMPARTMENT_ID
-  WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
+    TRUNC(DATE_BUCKET, 'IW'),
+    BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT,
+    SUM(COST), MAX(USAGE), SYSDATE
+  FROM COST_USAGE_TIMESERIES_DAILY
   GROUP BY
-    TRUNC(fr.CHARGEPERIODSTART, 'IW'),     
-    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
-    fr.SERVICECATEGORY, fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
-    orp.DISPLAY_NAME, fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME,
-    ocp.PATH, fr.USAGEUNIT;
+    TRUNC(DATE_BUCKET, 'IW'),
+    BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT;
 
-  -- Repeat for MONTH
+  -- Monthly (same as weekly, grouped by month)
   INSERT INTO COST_USAGE_TIMESERIES_MONTHLY (
     DATE_BUCKET, BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
     SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
@@ -813,29 +803,17 @@ BEGIN
     COST, USAGE, LAST_REFRESH
   )
   SELECT
-    TRUNC(fr.CHARGEPERIODSTART, 'MM'), 
-    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
-    NVL(fr.SERVICECATEGORY, 'None'), fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
-    orp.DISPLAY_NAME AS RESOURCENAME,
-    fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME, ocp.PATH, fr.USAGEUNIT,
-    SUM(fr.BILLEDCOST),
-    SUM(
-      CASE
-        WHEN LOWER(fr.USAGEUNIT) LIKE '%month%' THEN fr.USAGEQUANTITY
-        ELSE fr.USAGEQUANTITY / 24 
-      END
-    ),
-    SYSDATE
-  FROM FOCUS_REPORTS_PY fr
-  LEFT JOIN OCI_RESOURCES_PY orp ON fr.RESOURCEID = orp.IDENTIFIER
-  LEFT JOIN OCI_COMPARTMENTS_PY ocp ON fr.OCI_COMPARTMENTID = ocp.COMPARTMENT_ID
-  WHERE fr.CHARGEPERIODEND <= ADD_MONTHS(fr.CHARGEPERIODSTART, 7)
+    TRUNC(DATE_BUCKET, 'MM'),
+    BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT,
+    SUM(COST), MAX(USAGE), SYSDATE
+  FROM COST_USAGE_TIMESERIES_DAILY
   GROUP BY
-    TRUNC(fr.CHARGEPERIODSTART, 'MM'),     
-    fr.BILLINGACCOUNTID, fr.SUBACCOUNTNAME, fr.INVOICEISSUER, fr.REGION, fr.BILLINGCURRENCY,
-    fr.SERVICECATEGORY, fr.SERVICENAME, fr.CHARGEDESCRIPTION, fr.RESOURCETYPE, fr.RESOURCEID,
-    orp.DISPLAY_NAME, fr.SKUID, fr.PRICINGUNIT, fr.OCI_COMPARTMENTID, fr.OCI_COMPARTMENTNAME,
-    ocp.PATH, fr.USAGEUNIT;
+    TRUNC(DATE_BUCKET, 'MM'),
+    BILLINGACCOUNTID, SUBACCOUNTNAME, INVOICEISSUER, REGION, BILLINGCURRENCY,
+    SERVICECATEGORY, SERVICENAME, CHARGEDESCRIPTION, RESOURCETYPE, RESOURCEID, RESOURCENAME,
+    SKUID, PRICINGUNIT, OCI_COMPARTMENTID, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT;
   COMMIT;
 END;
 /
@@ -1901,6 +1879,633 @@ VALUES (7, 'How much did we spend on Block Volume in the last month?',
 INSERT INTO AI_PROMPT_EXAMPLES (example_order, user_question, oracle_sql)
 VALUES (8, 'List the top 5 compartments by compute cost in the last two months', 
 'WITH base AS (SELECT TO_CHAR(DATE_BUCKET, ''YYYY-MM'') AS MONTH, OCI_COMPARTMENTNAME, COST, CASE WHEN UPPER(SERVICECATEGORY) LIKE UPPER(''%Compute%'') THEN 1 WHEN UPPER(SERVICENAME) LIKE UPPER(''%Compute%'') THEN 2 WHEN UPPER(RESOURCETYPE) LIKE UPPER(''%Compute%'') THEN 3 WHEN UPPER(RESOURCENAME) LIKE UPPER(''%Compute%'') THEN 4 WHEN UPPER(CHARGEDESCRIPTION) LIKE UPPER(''%Compute%'') THEN 5 WHEN UPPER(OCI_COMPARTMENTNAME) LIKE UPPER(''%Compute%'') THEN 6 WHEN UPPER(OCI_COMPARTMENT_PATH) LIKE UPPER(''%Compute%'') THEN 7 WHEN UPPER(USAGEUNIT) LIKE UPPER(''%Compute%'') THEN 8 ELSE NULL END AS PRIORITY FROM COST_USAGE_TIMESERIES_DAILY WHERE DATE_BUCKET >= TRUNC(ADD_MONTHS(SYSDATE, -2), ''MM'') AND DATE_BUCKET < TRUNC(SYSDATE, ''MM'')), min_priority AS (SELECT OCI_COMPARTMENTNAME, MONTH, MIN(PRIORITY) AS MIN_PRIO FROM base WHERE PRIORITY IS NOT NULL GROUP BY OCI_COMPARTMENTNAME, MONTH) SELECT b.OCI_COMPARTMENTNAME AS COMPARTMENT_NAME, SUM(b.COST) AS TOTAL_COST FROM base b JOIN min_priority mp ON b.MONTH = mp.MONTH AND b.OCI_COMPARTMENTNAME = mp.OCI_COMPARTMENTNAME AND b.PRIORITY = mp.MIN_PRIO GROUP BY b.OCI_COMPARTMENTNAME ORDER BY TOTAL_COST DESC FETCH FIRST 5 ROWS ONLY;');
+
+-- Install new functions for new pivot tables 28/07/2025
+--------------------------------------------------------
+--  DDL for Function cost_pivot_dynamic_daily_html
+--------------------------------------------------------
+create or replace FUNCTION OCI_FOCUS_REPORTS.cost_pivot_dynamic_daily_html (
+    p_tenant             IN VARCHAR2,
+    p_subscription_id    IN VARCHAR2,
+    p_region             IN VARCHAR2,
+    p_compartment        IN VARCHAR2,
+    p_service_category   IN VARCHAR2,
+    p_service_name       IN VARCHAR2,
+    p_charge_description IN VARCHAR2,
+    p_resource_type      IN VARCHAR2,
+    p_resource_name      IN VARCHAR2,
+    p_fromdate           IN VARCHAR2,
+    p_todate             IN VARCHAR2,
+    p_group_level1       IN VARCHAR2,
+    p_group_level2       IN VARCHAR2,
+    p_group_level3       IN VARCHAR2
+) RETURN CLOB IS
+    v_html      CLOB := '';
+    v_cost      NUMBER := 0;
+    v_key       VARCHAR2(1000);
+    TYPE cost_map_type IS TABLE OF NUMBER INDEX BY VARCHAR2(1000);
+    v_totals    cost_map_type;
+    v_sql       CLOB;
+    TYPE rc IS REF CURSOR;
+    c_header    rc;
+    CURSOR cur_dates IS
+        SELECT DISTINCT DATE_BUCKET
+        FROM COST_USAGE_TIMESERIES_DAILY
+        WHERE DATE_BUCKET BETWEEN TO_DATE(p_fromdate, 'DD-MON-YYYY HH24:MI:SS') AND TO_DATE(p_todate, 'DD-MON-YYYY HH24:MI:SS')
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY DATE_BUCKET;
+
+    TYPE t_header_row IS TABLE OF VARCHAR2(1000) INDEX BY PLS_INTEGER;
+    TYPE int_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+
+    v_lvl1_header t_header_row;
+    v_lvl2_header t_header_row;
+    v_lvl3_header t_header_row;
+    v_columns     t_header_row;
+    v_idx         INTEGER := 0;
+    v_lvl1_map    t_header_row;
+    v_lvl2_map    t_header_row;
+    v_lvl1_colspan_map  int_map_type;
+    v_lvl2_colspan_map  int_map_type;
+    v_lvl1_col          VARCHAR2(100);
+    v_lvl2_col          VARCHAR2(100);
+    v_lvl3_col          VARCHAR2(100);
+    v_lvl1              VARCHAR2(500);
+    v_lvl2              VARCHAR2(500);
+    v_lvl3              VARCHAR2(500);
+    v_group_cursor      rc;
+BEGIN
+    v_lvl1_col := p_group_level1;
+    v_lvl2_col := p_group_level2;
+    v_lvl3_col := p_group_level3;
+
+    v_html := '<div class="pivot-scroll"><table id="pivot-table" class="pivot-table" border="1"><thead><tr><th rowspan="3">Day</th>';
+
+    -- Header level 1 (group_level1)
+    v_sql := 'SELECT DISTINCT NVL(' || v_lvl1_col || ', ''None'') AS lvl1, NVL(' || v_lvl2_col || ', ''Unknown'') AS lvl2, NVL(' || v_lvl3_col || ', ''Unknown'') AS lvl3 '
+          || 'FROM COST_USAGE_TIMESERIES_DAILY '
+          || 'WHERE DATE_BUCKET BETWEEN TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'') AND TO_DATE(:2, ''DD-MON-YYYY HH24:MI:SS'') '
+          || 'ORDER BY NVL(' || v_lvl1_col || ', ''None''), NVL(' || v_lvl2_col || ', ''Unknown''), NVL(' || v_lvl3_col || ', ''Unknown'')';
+
+    OPEN v_group_cursor FOR v_sql USING p_fromdate, p_todate;
+    LOOP
+        FETCH v_group_cursor INTO v_lvl1, v_lvl2, v_lvl3;
+        EXIT WHEN v_group_cursor%NOTFOUND;
+        v_key := v_lvl1 || '|' || v_lvl2 || '|' || v_lvl3;
+
+        IF NOT v_totals.EXISTS(v_key) THEN
+            v_idx := v_idx + 1;
+            v_columns(v_idx) := v_key;
+            v_lvl1_map(v_idx) := v_lvl1;
+            v_lvl2_map(v_idx) := v_lvl2;
+            v_lvl3_header(v_idx) := v_lvl3;
+        END IF;
+    END LOOP;
+    CLOSE v_group_cursor;
+
+    -- Build level 1 header row with colspan
+    DECLARE
+        TYPE local_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+        v_temp_lvl1 VARCHAR2(500);
+        v_local_colspan_map local_map_type;
+        v_col_key VARCHAR2(500);
+    BEGIN
+        FOR i IN 1 .. v_idx LOOP
+            v_temp_lvl1 := v_lvl1_map(i);
+            IF v_local_colspan_map.EXISTS(v_temp_lvl1) THEN
+                v_local_colspan_map(v_temp_lvl1) := v_local_colspan_map(v_temp_lvl1) + 1;
+            ELSE
+                v_local_colspan_map(v_temp_lvl1) := 1;
+            END IF;
+        END LOOP;
+
+        v_col_key := v_local_colspan_map.FIRST;
+        WHILE v_col_key IS NOT NULL LOOP
+            v_html := v_html || '<th colspan="' || v_local_colspan_map(v_col_key) || '">' || v_col_key || '</th>';
+            v_col_key := v_local_colspan_map.NEXT(v_col_key);
+        END LOOP;
+    END;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 2 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl2_map(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 3 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl3_header(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr></thead><tbody>';
+
+    -- Data rows
+    FOR date_rec IN cur_dates LOOP
+        v_html := v_html || '<tr><td>' || TO_CHAR(date_rec.DATE_BUCKET, 'DD-Mon') || '</td>';
+        FOR i IN 1 .. v_idx LOOP
+            v_sql := 'SELECT COALESCE(SUM(COST), 0) FROM COST_USAGE_TIMESERIES_DAILY WHERE DATE_BUCKET = TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'')'
+                  || ' AND NVL(' || v_lvl1_col || ', ''None'') = :2'
+                  || ' AND NVL(' || v_lvl2_col || ', ''Unknown'') = :3'
+                  || ' AND NVL(' || v_lvl3_col || ', ''Unknown'') = :4';
+            EXECUTE IMMEDIATE v_sql INTO v_cost USING TO_CHAR(date_rec.DATE_BUCKET, 'DD-MON-YYYY HH24:MI:SS'),
+                                                      v_lvl1_map(i), v_lvl2_map(i), v_lvl3_header(i);
+            v_key := v_columns(i);
+            IF v_totals.EXISTS(v_key) THEN
+                v_totals(v_key) := v_totals(v_key) + v_cost;
+            ELSE
+                v_totals(v_key) := v_cost;
+            END IF;
+            v_html := v_html || '<td>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G990D00') END || '</td>';
+        END LOOP;
+        v_html := v_html || '</tr>';
+    END LOOP;
+
+    -- Totals row
+    v_html := v_html || '<tr><td><b>Total</b></td>';
+    FOR i IN 1 .. v_idx LOOP
+        v_cost := NVL(v_totals(v_columns(i)), 0);
+        v_html := v_html || '<td><b>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G990D00') END || '</b></td>';
+    END LOOP;
+    v_html := v_html || '</tr>';
+
+    v_html := v_html || '</tbody></table></div>';
+    RETURN v_html;
+END;
+/
+--------------------------------------------------------
+--  DDL for Function cost_pivot_dynamic_weekly_html
+--------------------------------------------------------
+create or replace FUNCTION OCI_FOCUS_REPORTS.cost_pivot_dynamic_weekly_html (
+    p_tenant             IN VARCHAR2,
+    p_subscription_id    IN VARCHAR2,
+    p_region             IN VARCHAR2,
+    p_compartment        IN VARCHAR2,
+    p_service_category   IN VARCHAR2,
+    p_service_name       IN VARCHAR2,
+    p_charge_description IN VARCHAR2,
+    p_resource_type      IN VARCHAR2,
+    p_resource_name      IN VARCHAR2,
+    p_fromdate           IN VARCHAR2,
+    p_todate             IN VARCHAR2,
+    p_group_level1       IN VARCHAR2,
+    p_group_level2       IN VARCHAR2,
+    p_group_level3       IN VARCHAR2
+) RETURN CLOB IS
+    v_html      CLOB := '';
+    v_cost      NUMBER := 0;
+    v_key       VARCHAR2(1000);
+    TYPE cost_map_type IS TABLE OF NUMBER INDEX BY VARCHAR2(1000);
+    v_totals    cost_map_type;
+    v_sql       CLOB;
+    TYPE rc IS REF CURSOR;
+    c_header    rc;
+    CURSOR cur_dates IS
+        SELECT DISTINCT DATE_BUCKET
+        FROM COST_USAGE_TIMESERIES_WEEKLY
+        WHERE DATE_BUCKET BETWEEN TO_DATE(p_fromdate, 'DD-MON-YYYY HH24:MI:SS') AND TO_DATE(p_todate, 'DD-MON-YYYY HH24:MI:SS')
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY DATE_BUCKET;
+
+    TYPE t_header_row IS TABLE OF VARCHAR2(1000) INDEX BY PLS_INTEGER;
+    TYPE int_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+
+    v_lvl1_header t_header_row;
+    v_lvl2_header t_header_row;
+    v_lvl3_header t_header_row;
+    v_columns     t_header_row;
+    v_idx         INTEGER := 0;
+    v_lvl1_map    t_header_row;
+    v_lvl2_map    t_header_row;
+    v_lvl1_colspan_map  int_map_type;
+    v_lvl2_colspan_map  int_map_type;
+    v_lvl1_col          VARCHAR2(100);
+    v_lvl2_col          VARCHAR2(100);
+    v_lvl3_col          VARCHAR2(100);
+    v_lvl1              VARCHAR2(500);
+    v_lvl2              VARCHAR2(500);
+    v_lvl3              VARCHAR2(500);
+    v_group_cursor      rc;
+BEGIN
+    v_lvl1_col := p_group_level1;
+    v_lvl2_col := p_group_level2;
+    v_lvl3_col := p_group_level3;
+
+    v_html := '<table id="pivot-table" class="pivot-table" border="1"><thead><tr><th rowspan="3">Week</th>';
+
+    -- Header level 1 (group_level1)
+    v_sql := 'SELECT DISTINCT NVL(' || v_lvl1_col || ', ''None'') AS lvl1, NVL(' || v_lvl2_col || ', ''Unknown'') AS lvl2, NVL(' || v_lvl3_col || ', ''Unknown'') AS lvl3 '
+          || 'FROM COST_USAGE_TIMESERIES_WEEKLY '
+          || 'WHERE DATE_BUCKET BETWEEN TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'') AND TO_DATE(:2, ''DD-MON-YYYY HH24:MI:SS'') '
+          || 'ORDER BY NVL(' || v_lvl1_col || ', ''None''), NVL(' || v_lvl2_col || ', ''Unknown''), NVL(' || v_lvl3_col || ', ''Unknown'')';
+
+    OPEN v_group_cursor FOR v_sql USING p_fromdate, p_todate;
+    LOOP
+        FETCH v_group_cursor INTO v_lvl1, v_lvl2, v_lvl3;
+        EXIT WHEN v_group_cursor%NOTFOUND;
+        v_key := v_lvl1 || '|' || v_lvl2 || '|' || v_lvl3;
+
+        IF NOT v_totals.EXISTS(v_key) THEN
+            v_idx := v_idx + 1;
+            v_columns(v_idx) := v_key;
+            v_lvl1_map(v_idx) := v_lvl1;
+            v_lvl2_map(v_idx) := v_lvl2;
+            v_lvl3_header(v_idx) := v_lvl3;
+        END IF;
+    END LOOP;
+    CLOSE v_group_cursor;
+
+    -- Build level 1 header row with colspan
+    DECLARE
+        TYPE local_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+        v_temp_lvl1 VARCHAR2(500);
+        v_local_colspan_map local_map_type;
+        v_col_key VARCHAR2(500);
+    BEGIN
+        FOR i IN 1 .. v_idx LOOP
+            v_temp_lvl1 := v_lvl1_map(i);
+            IF v_local_colspan_map.EXISTS(v_temp_lvl1) THEN
+                v_local_colspan_map(v_temp_lvl1) := v_local_colspan_map(v_temp_lvl1) + 1;
+            ELSE
+                v_local_colspan_map(v_temp_lvl1) := 1;
+            END IF;
+        END LOOP;
+
+        v_col_key := v_local_colspan_map.FIRST;
+        WHILE v_col_key IS NOT NULL LOOP
+            v_html := v_html || '<th colspan="' || v_local_colspan_map(v_col_key) || '">' || v_col_key || '</th>';
+            v_col_key := v_local_colspan_map.NEXT(v_col_key);
+        END LOOP;
+    END;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 2 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl2_map(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 3 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl3_header(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr></thead><tbody>';
+
+    -- Data rows
+    FOR date_rec IN cur_dates LOOP
+        v_html := v_html || '<tr><td>' || TO_CHAR(date_rec.DATE_BUCKET, 'DD-Mon') || ' (W' || TO_CHAR(date_rec.DATE_BUCKET, 'IW') || ')</td>';
+        FOR i IN 1 .. v_idx LOOP
+            v_sql := 'SELECT COALESCE(SUM(COST), 0) FROM COST_USAGE_TIMESERIES_WEEKLY WHERE DATE_BUCKET = TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'')'
+                  || ' AND NVL(' || v_lvl1_col || ', ''None'') = :2'
+                  || ' AND NVL(' || v_lvl2_col || ', ''Unknown'') = :3'
+                  || ' AND NVL(' || v_lvl3_col || ', ''Unknown'') = :4';
+            EXECUTE IMMEDIATE v_sql INTO v_cost USING TO_CHAR(date_rec.DATE_BUCKET, 'DD-MON-YYYY HH24:MI:SS'),
+                                                      v_lvl1_map(i), v_lvl2_map(i), v_lvl3_header(i);
+            v_key := v_columns(i);
+            IF v_totals.EXISTS(v_key) THEN
+                v_totals(v_key) := v_totals(v_key) + v_cost;
+            ELSE
+                v_totals(v_key) := v_cost;
+            END IF;
+            v_html := v_html || '<td>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G990D00') END || '</td>';
+        END LOOP;
+        v_html := v_html || '</tr>';
+    END LOOP;
+
+    -- Totals row
+    v_html := v_html || '<tr><td><b>Total</b></td>';
+    FOR i IN 1 .. v_idx LOOP
+        v_cost := NVL(v_totals(v_columns(i)), 0);
+        v_html := v_html || '<td><b>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G990D00') END || '</b></td>';
+    END LOOP;
+    v_html := v_html || '</tr>';
+
+    v_html := v_html || '</tbody></table>';
+    RETURN v_html;
+END;
+/
+--------------------------------------------------------
+--  DDL for Function cost_pivot_dynamic_monthly_html
+--------------------------------------------------------
+create or replace FUNCTION OCI_FOCUS_REPORTS.cost_pivot_dynamic_monthly_html (
+    p_tenant             IN VARCHAR2,
+    p_subscription_id    IN VARCHAR2,
+    p_region             IN VARCHAR2,
+    p_compartment        IN VARCHAR2,
+    p_service_category   IN VARCHAR2,
+    p_service_name       IN VARCHAR2,
+    p_charge_description IN VARCHAR2,
+    p_resource_type      IN VARCHAR2,
+    p_resource_name      IN VARCHAR2,
+    p_fromdate           IN VARCHAR2,
+    p_todate             IN VARCHAR2,
+    p_group_level1       IN VARCHAR2,
+    p_group_level2       IN VARCHAR2,
+    p_group_level3       IN VARCHAR2
+) RETURN CLOB IS
+    v_html      CLOB := '';
+    v_cost      NUMBER := 0;
+    v_key       VARCHAR2(1000);
+    TYPE cost_map_type IS TABLE OF NUMBER INDEX BY VARCHAR2(1000);
+    v_totals    cost_map_type;
+    v_sql       CLOB;
+    TYPE rc IS REF CURSOR;
+    c_header    rc;
+    CURSOR cur_dates IS
+        SELECT DISTINCT TRUNC(DATE_BUCKET, 'MM') AS month_bucket
+        FROM COST_USAGE_TIMESERIES_MONTHLY
+        WHERE DATE_BUCKET BETWEEN TO_DATE(p_fromdate, 'DD-MON-YYYY HH24:MI:SS') AND TO_DATE(p_todate, 'DD-MON-YYYY HH24:MI:SS')
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY TRUNC(DATE_BUCKET, 'MM');
+
+    TYPE t_header_row IS TABLE OF VARCHAR2(1000) INDEX BY PLS_INTEGER;
+    TYPE int_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+
+    v_lvl1_header t_header_row;
+    v_lvl2_header t_header_row;
+    v_lvl3_header t_header_row;
+    v_columns     t_header_row;
+    v_idx         INTEGER := 0;
+    v_lvl1_map    t_header_row;
+    v_lvl2_map    t_header_row;
+    v_lvl1_colspan_map  int_map_type;
+    v_lvl2_colspan_map  int_map_type;
+    v_lvl1_col          VARCHAR2(100);
+    v_lvl2_col          VARCHAR2(100);
+    v_lvl3_col          VARCHAR2(100);
+    v_lvl1              VARCHAR2(500);
+    v_lvl2              VARCHAR2(500);
+    v_lvl3              VARCHAR2(500);
+    v_group_cursor      rc;
+BEGIN
+    v_lvl1_col := p_group_level1;
+    v_lvl2_col := p_group_level2;
+    v_lvl3_col := p_group_level3;
+
+    v_html := '<div class="pivot-scroll"><table id="pivot-table" class="pivot-table" border="1"><thead><tr><th rowspan="3">Month</th>';
+
+    -- Header level 1 (group_level1)
+    v_sql := 'SELECT DISTINCT NVL(' || v_lvl1_col || ', ''None'') AS lvl1, NVL(' || v_lvl2_col || ', ''Unknown'') AS lvl2, NVL(' || v_lvl3_col || ', ''Unknown'') AS lvl3 '
+          || 'FROM COST_USAGE_TIMESERIES_MONTHLY '
+          || 'WHERE DATE_BUCKET BETWEEN TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'') AND TO_DATE(:2, ''DD-MON-YYYY HH24:MI:SS'') '
+          || 'ORDER BY NVL(' || v_lvl1_col || ', ''None''), NVL(' || v_lvl2_col || ', ''Unknown''), NVL(' || v_lvl3_col || ', ''Unknown'')';
+
+    OPEN v_group_cursor FOR v_sql USING p_fromdate, p_todate;
+    LOOP
+        FETCH v_group_cursor INTO v_lvl1, v_lvl2, v_lvl3;
+        EXIT WHEN v_group_cursor%NOTFOUND;
+        v_key := v_lvl1 || '|' || v_lvl2 || '|' || v_lvl3;
+
+        IF NOT v_totals.EXISTS(v_key) THEN
+            v_idx := v_idx + 1;
+            v_columns(v_idx) := v_key;
+            v_lvl1_map(v_idx) := v_lvl1;
+            v_lvl2_map(v_idx) := v_lvl2;
+            v_lvl3_header(v_idx) := v_lvl3;
+        END IF;
+    END LOOP;
+    CLOSE v_group_cursor;
+
+    -- Build level 1 header row with colspan
+    DECLARE
+        TYPE local_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+        v_temp_lvl1 VARCHAR2(500);
+        v_local_colspan_map local_map_type;
+        v_col_key VARCHAR2(500);
+    BEGIN
+        FOR i IN 1 .. v_idx LOOP
+            v_temp_lvl1 := v_lvl1_map(i);
+            IF v_local_colspan_map.EXISTS(v_temp_lvl1) THEN
+                v_local_colspan_map(v_temp_lvl1) := v_local_colspan_map(v_temp_lvl1) + 1;
+            ELSE
+                v_local_colspan_map(v_temp_lvl1) := 1;
+            END IF;
+        END LOOP;
+
+        v_col_key := v_local_colspan_map.FIRST;
+        WHILE v_col_key IS NOT NULL LOOP
+            v_html := v_html || '<th colspan="' || v_local_colspan_map(v_col_key) || '">' || v_col_key || '</th>';
+            v_col_key := v_local_colspan_map.NEXT(v_col_key);
+        END LOOP;
+    END;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 2 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl2_map(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 3 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl3_header(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr></thead><tbody>';
+
+    -- Data rows
+    FOR date_rec IN cur_dates LOOP
+        v_html := v_html || '<tr><td>' || TO_CHAR(date_rec.month_bucket, 'Mon YYYY') || '</td>';
+        FOR i IN 1 .. v_idx LOOP
+            v_sql := 'SELECT COALESCE(SUM(COST), 0) FROM COST_USAGE_TIMESERIES_MONTHLY WHERE DATE_BUCKET = TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'')'
+                  || ' AND NVL(' || v_lvl1_col || ', ''None'') = :2'
+                  || ' AND NVL(' || v_lvl2_col || ', ''Unknown'') = :3'
+                  || ' AND NVL(' || v_lvl3_col || ', ''Unknown'') = :4';
+            EXECUTE IMMEDIATE v_sql INTO v_cost 
+                    USING TO_CHAR(date_rec.month_bucket, 'DD-MON-YYYY HH24:MI:SS'), 
+                            v_lvl1_map(i), 
+                            v_lvl2_map(i), 
+                            v_lvl3_header(i);
+            v_key := v_columns(i);
+            IF v_totals.EXISTS(v_key) THEN
+                v_totals(v_key) := v_totals(v_key) + v_cost;
+            ELSE
+                v_totals(v_key) := v_cost;
+            END IF;
+            v_html := v_html || '<td>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G990D00') END || '</td>';
+        END LOOP;
+        v_html := v_html || '</tr>';
+    END LOOP;
+
+    -- Totals row
+    v_html := v_html || '<tr><td><b>Total</b></td>';
+    FOR i IN 1 .. v_idx LOOP
+        v_cost := NVL(v_totals(v_columns(i)), 0);
+        v_html := v_html || '<td><b>' || CASE WHEN v_cost < 1 THEN '0' || TO_CHAR(v_cost, 'FM.00') ELSE TO_CHAR(v_cost, 'FM999G999G999G990D00') END || '</b></td>';
+    END LOOP;
+    v_html := v_html || '</tr>';
+
+    v_html := v_html || '</tbody></table></div>';
+    RETURN v_html;
+END;
+/
+--------------------------------------------------------
+--  DDL for Function usage_pivot_dynamic_daily_html
+--------------------------------------------------------
+create or replace FUNCTION OCI_FOCUS_REPORTS.usage_pivot_dynamic_daily_html (
+    p_tenant             IN VARCHAR2,
+    p_subscription_id    IN VARCHAR2,
+    p_region             IN VARCHAR2,
+    p_compartment        IN VARCHAR2,
+    p_service_category   IN VARCHAR2,
+    p_service_name       IN VARCHAR2,
+    p_charge_description IN VARCHAR2,
+    p_resource_type      IN VARCHAR2,
+    p_resource_name      IN VARCHAR2,
+    p_fromdate           IN VARCHAR2,
+    p_todate             IN VARCHAR2,
+    p_group_level1       IN VARCHAR2,
+    p_group_level2       IN VARCHAR2,
+    p_group_level3       IN VARCHAR2
+) RETURN CLOB IS
+    v_html      CLOB := '';
+    v_usage      NUMBER := 0;
+    v_key       VARCHAR2(1000);
+    TYPE cost_map_type IS TABLE OF NUMBER INDEX BY VARCHAR2(1000);
+    v_totals    cost_map_type;
+    v_sql       CLOB;
+    TYPE rc IS REF CURSOR;
+    c_header    rc;
+    CURSOR cur_dates IS
+        SELECT DISTINCT DATE_BUCKET
+        FROM COST_USAGE_TIMESERIES_DAILY
+        WHERE DATE_BUCKET BETWEEN TO_DATE(p_fromdate, 'DD-MON-YYYY HH24:MI:SS') AND TO_DATE(p_todate, 'DD-MON-YYYY HH24:MI:SS')
+          AND (SUBACCOUNTNAME IN (SELECT column_value FROM TABLE(apex_string.split(p_tenant,','))) OR p_tenant IS NULL)
+          AND (BILLINGACCOUNTID IN (SELECT column_value FROM TABLE(apex_string.split(p_subscription_id,','))) OR p_subscription_id IS NULL)
+          AND (REGION IN (SELECT column_value FROM TABLE(apex_string.split(p_region,','))) OR p_region IS NULL)
+          AND (OCI_COMPARTMENTID IN (SELECT column_value FROM TABLE(apex_string.split(p_compartment,','))) OR p_compartment IS NULL)
+          AND (SERVICECATEGORY IN (SELECT column_value FROM TABLE(apex_string.split(p_service_category,','))) OR p_service_category IS NULL)
+          AND (SERVICENAME IN (SELECT column_value FROM TABLE(apex_string.split(p_service_name,','))) OR p_service_name IS NULL)
+          AND (CHARGEDESCRIPTION IN (SELECT column_value FROM TABLE(apex_string.split(p_charge_description,','))) OR p_charge_description IS NULL)
+          AND (RESOURCETYPE IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_type,','))) OR p_resource_type IS NULL)
+          AND (RESOURCEID IN (SELECT column_value FROM TABLE(apex_string.split(p_resource_name,','))) OR p_resource_name IS NULL)
+        ORDER BY DATE_BUCKET;
+
+    TYPE t_header_row IS TABLE OF VARCHAR2(1000) INDEX BY PLS_INTEGER;
+    TYPE int_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+
+    v_lvl1_header t_header_row;
+    v_lvl2_header t_header_row;
+    v_lvl3_header t_header_row;
+    v_columns     t_header_row;
+    v_idx         INTEGER := 0;
+    v_lvl1_map    t_header_row;
+    v_lvl2_map    t_header_row;
+    v_lvl1_colspan_map  int_map_type;
+    v_lvl2_colspan_map  int_map_type;
+    v_lvl1_col          VARCHAR2(100);
+    v_lvl2_col          VARCHAR2(100);
+    v_lvl3_col          VARCHAR2(100);
+    v_lvl1              VARCHAR2(500);
+    v_lvl2              VARCHAR2(500);
+    v_lvl3              VARCHAR2(500);
+    v_group_cursor      rc;
+BEGIN
+    v_lvl1_col := p_group_level1;
+    v_lvl2_col := p_group_level2;
+    v_lvl3_col := p_group_level3;
+
+    v_html := '<div class="pivot-scroll"><table id="pivot-table" class="pivot-table" border="1"><thead><tr><th rowspan="3">Day</th>';
+
+    -- Header level 1 (group_level1)
+    v_sql := 'SELECT DISTINCT NVL(' || v_lvl1_col || ', ''None'') AS lvl1, NVL(' || v_lvl2_col || ', ''Unknown'') AS lvl2, NVL(' || v_lvl3_col || ', ''Unknown'') AS lvl3 '
+          || 'FROM COST_USAGE_TIMESERIES_DAILY '
+          || 'WHERE DATE_BUCKET BETWEEN TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'') AND TO_DATE(:2, ''DD-MON-YYYY HH24:MI:SS'') '
+          || 'ORDER BY NVL(' || v_lvl1_col || ', ''None''), NVL(' || v_lvl2_col || ', ''Unknown''), NVL(' || v_lvl3_col || ', ''Unknown'')';
+
+    OPEN v_group_cursor FOR v_sql USING p_fromdate, p_todate;
+    LOOP
+        FETCH v_group_cursor INTO v_lvl1, v_lvl2, v_lvl3;
+        EXIT WHEN v_group_cursor%NOTFOUND;
+        v_key := v_lvl1 || '|' || v_lvl2 || '|' || v_lvl3;
+
+        IF NOT v_totals.EXISTS(v_key) THEN
+            v_idx := v_idx + 1;
+            v_columns(v_idx) := v_key;
+            v_lvl1_map(v_idx) := v_lvl1;
+            v_lvl2_map(v_idx) := v_lvl2;
+            v_lvl3_header(v_idx) := v_lvl3;
+        END IF;
+    END LOOP;
+    CLOSE v_group_cursor;
+
+    -- Build level 1 header row with colspan
+    DECLARE
+        TYPE local_map_type IS TABLE OF INTEGER INDEX BY VARCHAR2(500);
+        v_temp_lvl1 VARCHAR2(500);
+        v_local_colspan_map local_map_type;
+        v_col_key VARCHAR2(500);
+    BEGIN
+        FOR i IN 1 .. v_idx LOOP
+            v_temp_lvl1 := v_lvl1_map(i);
+            IF v_local_colspan_map.EXISTS(v_temp_lvl1) THEN
+                v_local_colspan_map(v_temp_lvl1) := v_local_colspan_map(v_temp_lvl1) + 1;
+            ELSE
+                v_local_colspan_map(v_temp_lvl1) := 1;
+            END IF;
+        END LOOP;
+
+        v_col_key := v_local_colspan_map.FIRST;
+        WHILE v_col_key IS NOT NULL LOOP
+            v_html := v_html || '<th colspan="' || v_local_colspan_map(v_col_key) || '">' || v_col_key || '</th>';
+            v_col_key := v_local_colspan_map.NEXT(v_col_key);
+        END LOOP;
+    END;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 2 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl2_map(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr><tr>';
+
+    -- Level 3 header row
+    FOR i IN 1 .. v_idx LOOP
+        v_html := v_html || '<th>' || v_lvl3_header(i) || '</th>';
+    END LOOP;
+    v_html := v_html || '</tr></thead><tbody>';
+
+    -- Data rows
+    FOR date_rec IN cur_dates LOOP
+        v_html := v_html || '<tr><td>' || TO_CHAR(date_rec.DATE_BUCKET, 'DD-Mon') || '</td>';
+        FOR i IN 1 .. v_idx LOOP
+            v_sql := 'SELECT COALESCE(SUM(USAGE), 0) FROM COST_USAGE_TIMESERIES_DAILY WHERE DATE_BUCKET = TO_DATE(:1, ''DD-MON-YYYY HH24:MI:SS'')'
+                  || ' AND NVL(' || v_lvl1_col || ', ''None'') = :2'
+                  || ' AND NVL(' || v_lvl2_col || ', ''Unknown'') = :3'
+                  || ' AND NVL(' || v_lvl3_col || ', ''Unknown'') = :4';
+            EXECUTE IMMEDIATE v_sql INTO v_usage USING TO_CHAR(date_rec.DATE_BUCKET, 'DD-MON-YYYY HH24:MI:SS'),
+                                                      v_lvl1_map(i), v_lvl2_map(i), v_lvl3_header(i);
+            v_html := v_html || '<td>' || CASE WHEN v_usage < 1 THEN '0' || TO_CHAR(v_usage, 'FM.00') ELSE TO_CHAR(v_usage, 'FM999G999G999G990D00') END || '</td>';
+        END LOOP;
+        v_html := v_html || '</tr>';
+    END LOOP;
+
+    v_html := v_html || '</tbody></table></div>';
+    RETURN v_html;
+END;
+/
 
 -- Drop objects
 
