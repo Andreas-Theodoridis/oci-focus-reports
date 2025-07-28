@@ -194,6 +194,11 @@ def main():
     patch_path = os.path.join(app_dir, "db_scripts", "patch.sql")
     patch_file = open(patch_path, "w")
 
+    # === Establish DB connection BEFORE drop checking ===
+    os.environ['TNS_ADMIN'] = wallet_path
+    conn = oracledb.connect(user=db_user, password=db_pass, dsn=db_dsn)
+    cursor = conn.cursor()
+
     # === Extract and write DROP statements from script ===
     drop_statements = extract_drop_statements(sql_text)
     if drop_statements:
@@ -222,10 +227,6 @@ def main():
     indexes = extract_object_ddls(sql_text, "INDEX")
     mvs = extract_object_ddls(sql_text, "MATERIALIZED VIEW")
     views = extract_object_ddls(sql_text, "VIEW")
-
-    os.environ['TNS_ADMIN'] = wallet_path
-    conn = oracledb.connect(user=db_user, password=db_pass, dsn=db_dsn)
-    cursor = conn.cursor()
 
     cursor.execute("""
     SELECT object_name, object_type FROM all_objects
