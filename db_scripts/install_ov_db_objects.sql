@@ -1826,19 +1826,19 @@ VALUES ('P2_COMPARTMENT_ID', '&COMPARTMENT_OCID');
 INSERT INTO AI_PROMPT_COMPONENTS (component_type, content)
 VALUES (
   'INSTRUCTION',
-  'You are an expert in translating natural language questions about Oracle Cloud Infrastructure (OCI) cost, usage, and availability into accurate Oracle SQL queries using the following tables: COST_USAGE_TIMESERIES_DAILY (alias: c) and OCI_AVAILABILITY_METRICS_PY (alias: a). When generating SQL: always use case-insensitive string matching using UPPER(column) LIKE UPPER(''%value%''), never use equals (=). Apply this matching rule only to these columns: from c: SERVICECATEGORY, SERVICENAME, RESOURCETYPE, RESOURCENAME, CHARGEDESCRIPTION, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT; from a: RESOURCEDISPLAYNAME, NAMESPACE, METRIC_NAME. Generate an Oracle SQL query to retrieve the monthly cost for resources related to a free text word or sentence like ''AI'' over the last two months. Search for the keyword or sentence like ''AI'' in the columns SERVICECATEGORY, SERVICENAME, RESOURCETYPE, RESOURCENAME, CHARGEDESCRIPTION, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, and USAGEUNIT in that priority order. Return results only for the first matched column. Use case-insensitive matching and aggregate the requested value. When filtering dates, use c.DATE_BUCKET BETWEEN TRUNC(ADD_MONTHS(SYSDATE, -2), ''MM'') AND TRUNC(LAST_DAY(ADD_MONTHS(SYSDATE, -1))) to include the last two months and exclude the current month. Use the same logic for any requested months. Format the output as YYYY-MM using TO_CHAR(c.DATE_BUCKET, ''YYYY-MM''). Apply this logic consistently in all queries. When user''s prompt includes non-IT terminology and looks more like a name (as an example Oracle), search also against OCI_WORKLOADS (WORKLOAD_NAME) and join with COST_USAGE_TIMESERIES_DAILY on compartment_id and value.'
+  'You are an expert in translating natural language questions about Oracle Cloud Infrastructure (OCI) cost, usage, and availability into accurate Oracle SQL queries using the following tables: COST_USAGE_TIMESERIES_DAILY (alias: c), OCI_AVAILABILITY_METRICS_PY (alias: a), OCI_WORKLOADS (alias: w). When generating SQL: always use case-insensitive string matching using UPPER(column) LIKE UPPER(''%value%''), never use equals (=). Apply this matching rule only to these columns: from c: SERVICECATEGORY, SERVICENAME, RESOURCETYPE, RESOURCENAME, CHARGEDESCRIPTION, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, USAGEUNIT; from a: RESOURCEDISPLAYNAME, NAMESPACE, METRIC_NAME. Generate an Oracle SQL query to retrieve the monthly cost for resources related to a free text word or sentence like ''AI'' over the last two months. Search for the keyword or sentence like ''AI'' in the columns SERVICECATEGORY, SERVICENAME, RESOURCETYPE, RESOURCENAME, CHARGEDESCRIPTION, OCI_COMPARTMENTNAME, OCI_COMPARTMENT_PATH, and USAGEUNIT in that priority order. Return results only for the first matched column. Use case-insensitive matching and aggregate the requested value. When filtering dates, use c.DATE_BUCKET BETWEEN TRUNC(ADD_MONTHS(SYSDATE, -2), ''MM'') AND TRUNC(LAST_DAY(ADD_MONTHS(SYSDATE, -1))) to include the last two months and exclude the current month. Use the same logic for any requested months. Format the output as YYYY-MM using TO_CHAR(c.DATE_BUCKET, ''YYYY-MM''). Apply this logic consistently in all queries. When user''s prompt includes non-IT terminology and looks more like a name (as an example Oracle), search also against OCI_WORKLOADS (WORKLOAD_NAME) and join with COST_USAGE_TIMESERIES_DAILY on compartment_id and value. You can combine information of tables COST_USAGE_TIMESERIES_DAILY and OCI_WORKLOADS with c.OCI_COMPARTMENTID in w.VALUE'
 );
 
 INSERT INTO AI_PROMPT_COMPONENTS (component_type, content)
 VALUES (
   'SCHEMA',
-  'CREATE TABLE "USAGE"."OCI_AVAILABILITY_METRICS_PY" ( "RESOURCEDISPLAYNAME" VARCHAR2(64 BYTE), "TIMESTAMP" TIMESTAMP (6), "NAMESPACE" VARCHAR2(64 BYTE), "COMPARTMENT_ID" VARCHAR2(256 BYTE), "VALUE" NUMBER, "METRIC_NAME" VARCHAR2(128 BYTE)); CREATE TABLE COST_USAGE_TIMESERIES_DAILY ( DATE_BUCKET DATE, BILLINGACCOUNTID VARCHAR2(200 BYTE), SUBACCOUNTNAME VARCHAR2(200 BYTE), INVOICEISSUER VARCHAR2(200 BYTE), REGION VARCHAR2(100 BYTE), BILLINGCURRENCY VARCHAR2(20 BYTE), SERVICECATEGORY VARCHAR2(200 BYTE), SERVICENAME VARCHAR2(200 BYTE), CHARGEDESCRIPTION VARCHAR2(400 BYTE), RESOURCETYPE VARCHAR2(200 BYTE), RESOURCEID VARCHAR2(400 BYTE), SKUID VARCHAR2(200 BYTE), PRICINGUNIT VARCHAR2(100 BYTE), OCI_COMPARTMENTID VARCHAR2(400 BYTE), OCI_COMPARTMENTNAME VARCHAR2(400 BYTE), USAGEUNIT VARCHAR2(100 BYTE), COST NUMBER(20, 6), USAGE NUMBER(20, 6), RESOURCENAME VARCHAR2(1000 BYTE), OCI_COMPARTMENT_PATH VARCHAR2(4000 BYTE));'
+  'CREATE TABLE "OCI_AVAILABILITY_METRICS_PY" ( RESOURCEDISPLAYNAME VARCHAR2(64 BYTE), TIMESTAMP TIMESTAMP (6), NAMESPACE VARCHAR2(64 BYTE), COMPARTMENT_ID VARCHAR2(256 BYTE), VALUE NUMBER, METRIC_NAME VARCHAR2(128 BYTE)); CREATE TABLE COST_USAGE_TIMESERIES_DAILY ( DATE_BUCKET DATE, BILLINGACCOUNTID VARCHAR2(200 BYTE), SUBACCOUNTNAME VARCHAR2(200 BYTE), INVOICEISSUER VARCHAR2(200 BYTE), REGION VARCHAR2(100 BYTE), BILLINGCURRENCY VARCHAR2(20 BYTE), SERVICECATEGORY VARCHAR2(200 BYTE), SERVICENAME VARCHAR2(200 BYTE), CHARGEDESCRIPTION VARCHAR2(400 BYTE), RESOURCETYPE VARCHAR2(200 BYTE), RESOURCEID VARCHAR2(400 BYTE), SKUID VARCHAR2(200 BYTE), PRICINGUNIT VARCHAR2(100 BYTE), OCI_COMPARTMENTID VARCHAR2(400 BYTE), OCI_COMPARTMENTNAME VARCHAR2(400 BYTE), USAGEUNIT VARCHAR2(100 BYTE), COST NUMBER(20, 6), USAGE NUMBER(20, 6), RESOURCENAME VARCHAR2(1000 BYTE), OCI_COMPARTMENT_PATH VARCHAR2(4000 BYTE), CREATED_BY VARCHAR2(1000 BYTE)); CREATE TABLE "OCI_WORKLOADS" (WORKLOAD_NAME VARCHAR2 (100),VALUE CLOB);'
 );
 
 INSERT INTO AI_PROMPT_COMPONENTS (component_type, content)
 VALUES (
   'TABLE_DESCRIPTIONS',
-  'Table COST_USAGE_TIMESERIES_DAILY contains OCI cost and usage data, including: - DATE_BUCKET: Aggregated date based on daily granularity (e.g., 01-MAY-2025) - BILLINGACCOUNTID: OCI billing account ID - SUBACCOUNTNAME: Subaccount under the billing account - INVOICEISSUER: Entity issuing the invoice (e.g., Oracle America) - REGION: OCI region where the usage occurred - BILLINGCURRENCY: Currency used for billing (e.g., USD, EUR) - SERVICECATEGORY: Broad OCI service category (e.g., Compute, Storage, Database). Always use Camel Case - SERVICENAME: Specific service name (e.g., BLOCK_STORAGE, COMPUTE, LOGGING, DATABASE). Always use capitals - CHARGEDESCRIPTION: Description of the charge (e.g., Logging - Storage, Database Exadata - OCPU - BYOL) - RESOURCETYPE: Type of resource (e.g., instance, bootvolume, vmcluster, vnic, log). Always use lower case - RESOURCEID: Unique identifier for the OCI resource - SKUID: Identifier of the pricing unit - PRICINGUNIT: Pricing unit (e.g., PER_HOUR, PER_GB) - OCI_COMPARTMENTID: Identifier of the compartment - OCI_COMPARTMENTNAME: Name of the compartment - USAGEUNIT: Unit of resource usage (e.g., OCPU, GB, HOUR) - COST: Cost incurred for the usage (numeric) - USAGE: Quantity of usage (numeric) - RESOURCENAME: Display name of the resource, if available - OCI_COMPARTMENT_PATH: Full hierarchy path of the compartment. Table OCI_AVAILABILITY_METRICS_PY contains availability metrics for various OCI resources: - RESOURCEDISPLAYNAME: Human-readable name of the OCI resource - TIMESTAMP: Time when the metric was recorded - NAMESPACE: Metric category (e.g., oci_computeagent, oci_logging) - COMPARTMENT_ID: Compartment where the resource is located - VALUE: Reported value of the availability metric - METRIC_NAME: Specific name of the metric within the namespace (e.g., CpuUtilization, MemoryAvailable). Table OCI_WORKLOADS contains workload name and compartement id (ocid): - WORKLOAD_NAME: friendly name of the workload. Can be used when user requests data on worklaods - VALUE: Compartment ID, can contain multiple values comma separated and should be used as a where claues with IN.'
+  'Table COST_USAGE_TIMESERIES_DAILY contains OCI cost and usage data, including: - DATE_BUCKET: Aggregated date based on daily granularity (e.g., 01-MAY-2025) - BILLINGACCOUNTID: OCI billing account ID - SUBACCOUNTNAME: Subaccount under the billing account - INVOICEISSUER: Entity issuing the invoice (e.g., Oracle America) - REGION: OCI region where the usage occurred - BILLINGCURRENCY: Currency used for billing (e.g., USD, EUR) - SERVICECATEGORY: Broad OCI service category (e.g., Compute, Storage, Database). Always use Camel Case - SERVICENAME: Specific service name (e.g., BLOCK_STORAGE, COMPUTE, LOGGING, DATABASE). Always use capitals - CHARGEDESCRIPTION: Description of the charge (e.g., Logging - Storage, Database Exadata - OCPU - BYOL) - RESOURCETYPE: Type of resource (e.g., instance, bootvolume, vmcluster, vnic, log). Always use lower case - RESOURCEID: Unique identifier for the OCI resource - SKUID: Identifier of the pricing unit - PRICINGUNIT: Pricing unit (e.g., PER_HOUR, PER_GB) - OCI_COMPARTMENTID: Identifier of the compartment - OCI_COMPARTMENTNAME: Name of the compartment - USAGEUNIT: Unit of resource usage (e.g., OCPU, GB, HOUR) - COST: Cost incurred for the usage (numeric) - USAGE: Quantity of usage (numeric) - RESOURCENAME: Display name of the resource, if available - OCI_COMPARTMENT_PATH: Full hierarchy path of the compartment - CREATED_BY: Name of the user or id of the service created the resource. Table OCI_AVAILABILITY_METRICS_PY contains availability metrics for various OCI resources: - RESOURCEDISPLAYNAME: Human-readable name of the OCI resource - TIMESTAMP: Time when the metric was recorded - NAMESPACE: Metric category (e.g., oci_computeagent, oci_logging) - COMPARTMENT_ID: Compartment where the resource is located - VALUE: Reported value of the availability metric - METRIC_NAME: Specific name of the metric within the namespace (e.g., CpuUtilization, MemoryAvailable). Table OCI_WORKLOADS contains workload name and compartement id (ocid): - WORKLOAD_NAME: friendly name of the workload. Can be used when user requests data on worklaods - VALUE: Compartment ID, can contain multiple values comma separated and should be used as a where claues with IN.'
 );
 
 INSERT INTO AI_PROMPT_EXAMPLES (example_order, user_question, oracle_sql)
@@ -1889,6 +1889,10 @@ VALUES (7, 'How much did we spend on Block Volume in the last month?',
 
 INSERT INTO AI_PROMPT_EXAMPLES (example_order, user_question, oracle_sql)
 VALUES (8, 'List the top 5 compartments by compute cost in the last two months', 
+'WITH base AS (SELECT TO_CHAR(DATE_BUCKET, ''YYYY-MM'') AS MONTH, OCI_COMPARTMENTNAME, COST, CASE WHEN UPPER(SERVICECATEGORY) LIKE UPPER(''%Compute%'') THEN 1 WHEN UPPER(SERVICENAME) LIKE UPPER(''%Compute%'') THEN 2 WHEN UPPER(RESOURCETYPE) LIKE UPPER(''%Compute%'') THEN 3 WHEN UPPER(RESOURCENAME) LIKE UPPER(''%Compute%'') THEN 4 WHEN UPPER(CHARGEDESCRIPTION) LIKE UPPER(''%Compute%'') THEN 5 WHEN UPPER(OCI_COMPARTMENTNAME) LIKE UPPER(''%Compute%'') THEN 6 WHEN UPPER(OCI_COMPARTMENT_PATH) LIKE UPPER(''%Compute%'') THEN 7 WHEN UPPER(USAGEUNIT) LIKE UPPER(''%Compute%'') THEN 8 ELSE NULL END AS PRIORITY FROM COST_USAGE_TIMESERIES_DAILY WHERE DATE_BUCKET >= TRUNC(ADD_MONTHS(SYSDATE, -2), ''MM'') AND DATE_BUCKET < TRUNC(SYSDATE, ''MM'')), min_priority AS (SELECT OCI_COMPARTMENTNAME, MONTH, MIN(PRIORITY) AS MIN_PRIO FROM base WHERE PRIORITY IS NOT NULL GROUP BY OCI_COMPARTMENTNAME, MONTH) SELECT b.OCI_COMPARTMENTNAME AS COMPARTMENT_NAME, SUM(b.COST) AS TOTAL_COST FROM base b JOIN min_priority mp ON b.MONTH = mp.MONTH AND b.OCI_COMPARTMENTNAME = mp.OCI_COMPARTMENTNAME AND b.PRIORITY = mp.MIN_PRIO GROUP BY b.OCI_COMPARTMENTNAME ORDER BY TOTAL_COST DESC FETCH FIRST 5 ROWS ONLY;');
+
+INSERT INTO AI_PROMPT_EXAMPLES (example_order, user_question, oracle_sql)
+VALUES (8, 'List the top 10 usernames by cost in the last two months', 
 'WITH base AS (SELECT TO_CHAR(DATE_BUCKET, ''YYYY-MM'') AS MONTH, OCI_COMPARTMENTNAME, COST, CASE WHEN UPPER(SERVICECATEGORY) LIKE UPPER(''%Compute%'') THEN 1 WHEN UPPER(SERVICENAME) LIKE UPPER(''%Compute%'') THEN 2 WHEN UPPER(RESOURCETYPE) LIKE UPPER(''%Compute%'') THEN 3 WHEN UPPER(RESOURCENAME) LIKE UPPER(''%Compute%'') THEN 4 WHEN UPPER(CHARGEDESCRIPTION) LIKE UPPER(''%Compute%'') THEN 5 WHEN UPPER(OCI_COMPARTMENTNAME) LIKE UPPER(''%Compute%'') THEN 6 WHEN UPPER(OCI_COMPARTMENT_PATH) LIKE UPPER(''%Compute%'') THEN 7 WHEN UPPER(USAGEUNIT) LIKE UPPER(''%Compute%'') THEN 8 ELSE NULL END AS PRIORITY FROM COST_USAGE_TIMESERIES_DAILY WHERE DATE_BUCKET >= TRUNC(ADD_MONTHS(SYSDATE, -2), ''MM'') AND DATE_BUCKET < TRUNC(SYSDATE, ''MM'')), min_priority AS (SELECT OCI_COMPARTMENTNAME, MONTH, MIN(PRIORITY) AS MIN_PRIO FROM base WHERE PRIORITY IS NOT NULL GROUP BY OCI_COMPARTMENTNAME, MONTH) SELECT b.OCI_COMPARTMENTNAME AS COMPARTMENT_NAME, SUM(b.COST) AS TOTAL_COST FROM base b JOIN min_priority mp ON b.MONTH = mp.MONTH AND b.OCI_COMPARTMENTNAME = mp.OCI_COMPARTMENTNAME AND b.PRIORITY = mp.MIN_PRIO GROUP BY b.OCI_COMPARTMENTNAME ORDER BY TOTAL_COST DESC FETCH FIRST 5 ROWS ONLY;');
 
 -- Install new functions for new pivot tables 28/07/2025
@@ -1945,10 +1949,13 @@ CREATE OR REPLACE FUNCTION OCI_FOCUS_REPORTS.cost_pivot_dynamic_daily_html (
 
     FUNCTION add_filter(col_name VARCHAR2, param_val VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
-        IF param_val IS NULL THEN
+        IF param_val IS NULL OR TRIM(param_val) IS NULL THEN
             RETURN '';
         ELSE
-            RETURN ' AND ' || col_name || ' IN (SELECT column_value FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''')))';
+            RETURN ' AND ' || col_name || ' IN (
+                SELECT TRIM(COLUMN_VALUE)
+                FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''', '',''))
+            )';
         END IF;
     END;
 
@@ -2134,10 +2141,13 @@ create or replace FUNCTION OCI_FOCUS_REPORTS.cost_pivot_dynamic_weekly_html (
 
     FUNCTION add_filter(col_name VARCHAR2, param_val VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
-        IF param_val IS NULL THEN
+        IF param_val IS NULL OR TRIM(param_val) IS NULL THEN
             RETURN '';
         ELSE
-            RETURN ' AND ' || col_name || ' IN (SELECT column_value FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''')))';
+            RETURN ' AND ' || col_name || ' IN (
+                SELECT TRIM(COLUMN_VALUE)
+                FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''', '',''))
+            )';
         END IF;
     END;
 BEGIN
@@ -2322,10 +2332,13 @@ create or replace FUNCTION OCI_FOCUS_REPORTS.cost_pivot_dynamic_monthly_html (
 
     FUNCTION add_filter(col_name VARCHAR2, param_val VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
-        IF param_val IS NULL THEN
+        IF param_val IS NULL OR TRIM(param_val) IS NULL THEN
             RETURN '';
         ELSE
-            RETURN ' AND ' || col_name || ' IN (SELECT column_value FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''')))';
+            RETURN ' AND ' || col_name || ' IN (
+                SELECT TRIM(COLUMN_VALUE)
+                FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''', '',''))
+            )';
         END IF;
     END;
 BEGIN
@@ -2512,10 +2525,13 @@ create or replace FUNCTION OCI_FOCUS_REPORTS.usage_pivot_dynamic_daily_html (
 
     FUNCTION add_filter(col_name VARCHAR2, param_val VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
-        IF param_val IS NULL THEN
+        IF param_val IS NULL OR TRIM(param_val) IS NULL THEN
             RETURN '';
         ELSE
-            RETURN ' AND ' || col_name || ' IN (SELECT column_value FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''')))';
+            RETURN ' AND ' || col_name || ' IN (
+                SELECT TRIM(COLUMN_VALUE)
+                FROM TABLE(apex_string.split(''' || REPLACE(param_val, '''', '''''') || ''', '',''))
+            )';
         END IF;
     END;
 
