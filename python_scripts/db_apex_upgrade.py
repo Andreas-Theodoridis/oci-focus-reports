@@ -200,7 +200,21 @@ def main():
         logging.info(f"🗑️ Found {len(drop_statements)} DROP statements in the script.")
         patch_file.write("-- DROP statements from script\n")
         for stmt in drop_statements:
-            patch_file.write(stmt + "\n")
+            drop_match = re.match(
+                r'(?i)\bDROP\s+(TABLE|INDEX|VIEW|MATERIALIZED\s+VIEW)\s+(?:"[^"]+"\.)?"([^"]+)"', stmt
+            )
+            if drop_match:
+                obj_type = drop_match.group(1).upper().replace("MATERIALIZED VIEW", "MATERIALIZED_VIEW")
+                obj_name = drop_match.group(2).upper()
+                cursor.execute("""
+                    SELECT 1 FROM all_objects
+                    WHERE object_type = :1 AND object_name = :2 AND owner = :3
+                """, [obj_type, obj_name, target_schema.upper()])
+                if cursor.fetchone():
+                    logging.info(f"  ✅ Object exists, keeping DROP: {stmt}")
+                    patch_file.write(stmt + "\n")
+                else:
+                    logging.info(f"  ❌ Object not found, skipping DROP: {stmt}")
         patch_file.write("\n")
 
     # === Extract objects from script ===
