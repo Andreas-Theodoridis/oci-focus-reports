@@ -131,8 +131,8 @@ def create_stage_and_log_tables(cursor):
                     FILENAME VARCHAR2(500),
                     LOAD_DATE TIMESTAMP DEFAULT SYSTIMESTAMP,
                     TOTAL_ROWS NUMBER,
+                    INSERTED_ROWS NUMBER,
                     FAILED_ROWS NUMBER,
-                    UPDATED_ROWS NUMBER,
                     STATUS VARCHAR2(20),
                     ERROR_MESSAGE VARCHAR2(4000)
                 )';
