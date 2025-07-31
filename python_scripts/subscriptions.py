@@ -13,9 +13,11 @@ import oracledb
 app_dir    = "/home/opc/oci-focus-reports"
 config_dir = os.path.join(app_dir, "config")
 log_dir    = os.path.join(app_dir, "logs")
+OLD_LOG_DIR = os.path.join(LOG_DIR, "old")
 output_dir = os.path.join(app_dir, "data", "subscriptions")
 
 os.makedirs(log_dir, exist_ok=True)
+os.makedirs(OLD_LOG_DIR, exist_ok=True)
 os.makedirs(output_dir, exist_ok=True)
 
 def load_config(name):
@@ -40,21 +42,33 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = os.path.join(log_dir, f"oci_subscriptions_{timestamp}.log")
 latest_log_symlink = os.path.join(log_dir, "latest_subscriptions.log")
 
-for filename in os.listdir(log_dir):
-    if fnmatch.fnmatch(filename, log_file_pattern) and filename != os.path.basename(log_filename):
-        full_path = os.path.join(log_dir, filename)
-        gz_path = full_path + '.gz'
-        with open(full_path, 'rb') as f_in, gzip.open(gz_path, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-        os.remove(full_path)
+# Zip old logs
+for filename in os.listdir(LOG_DIR):
+    if (
+        fnmatch.fnmatch(filename, log_file_pattern)
+        and filename != os.path.basename(log_filename)
+        and not filename.endswith(".gz")
+    ):
+        full_path = os.path.join(LOG_DIR, filename)
+        gz_temp_path = full_path + ".gz"
+        final_gz_path = os.path.join(OLD_LOG_DIR, os.path.basename(gz_temp_path))
 
+        with open(full_path, "rb") as f_in, gzip.open(gz_temp_path, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+        os.remove(full_path)
+        shutil.move(gz_temp_path, final_gz_path)
+        logging.info(f"📦 Archived log: {final_gz_path}")
+
+# Remove logs older than 30 days
 cutoff_date = datetime.now() - timedelta(days=30)
-for filename in os.listdir(log_dir):
+for filename in os.listdir(OLD_LOG_DIR):
     if filename.endswith(".gz"):
-        full_path = os.path.join(log_dir, filename)
+        full_path = os.path.join(OLD_LOG_DIR, filename)
         mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
         if mtime < cutoff_date:
             os.remove(full_path)
+            logging.info(f"🧹 Deleted old log archive: {filename}")
 
 if os.path.exists(latest_log_symlink) or os.path.islink(latest_log_symlink):
     os.remove(latest_log_symlink)

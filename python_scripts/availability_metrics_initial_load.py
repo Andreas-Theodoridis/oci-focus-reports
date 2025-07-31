@@ -35,27 +35,39 @@ use_test_creds = config.get("use_test_credentials", False)
 # Logging setup
 LOG_DIR = os.path.join(app_dir, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
+OLD_LOG_DIR = os.path.join(LOG_DIR, "old")
+os.makedirs(OLD_LOG_DIR, exist_ok=True)
 # Create timestamped log filename
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = os.path.join(LOG_DIR, f"availability_reports_{timestamp}.log")
 latest_log_symlink = os.path.join(LOG_DIR, "latest_availability.log")
-# Zip all previous .log files (except current one)
+# Zip old logs
 for filename in os.listdir(LOG_DIR):
-    if fnmatch.fnmatch(filename, log_file_pattern) and filename != os.path.basename(log_filename):
+    if (
+        fnmatch.fnmatch(filename, log_file_pattern)
+        and filename != os.path.basename(log_filename)
+        and not filename.endswith(".gz")
+    ):
         full_path = os.path.join(LOG_DIR, filename)
-        gz_path = full_path + '.gz'
-        with open(full_path, 'rb') as f_in, gzip.open(gz_path, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-        os.remove(full_path)
+        gz_temp_path = full_path + ".gz"
+        final_gz_path = os.path.join(OLD_LOG_DIR, os.path.basename(gz_temp_path))
 
-# Delete .gz logs older than 30 days
+        with open(full_path, "rb") as f_in, gzip.open(gz_temp_path, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+        os.remove(full_path)
+        shutil.move(gz_temp_path, final_gz_path)
+        logging.info(f"📦 Archived log: {final_gz_path}")
+
+# Remove logs older than 30 days
 cutoff_date = datetime.now() - timedelta(days=30)
-for filename in os.listdir(LOG_DIR):
+for filename in os.listdir(OLD_LOG_DIR):
     if filename.endswith(".gz"):
-        full_path = os.path.join(LOG_DIR, filename)
+        full_path = os.path.join(OLD_LOG_DIR, filename)
         mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
         if mtime < cutoff_date:
             os.remove(full_path)
+            logging.info(f"🧹 Deleted old log archive: {filename}")
 
 # Update 'latest.log' symlink
 if os.path.exists(latest_log_symlink) or os.path.islink(latest_log_symlink):
