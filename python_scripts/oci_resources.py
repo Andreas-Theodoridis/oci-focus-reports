@@ -47,6 +47,12 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = os.path.join(log_dir, f"resources_{timestamp}.log")
 latest_log_symlink = os.path.join(log_dir, "latest_resources.log")
 
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+
 # Zip old logs
 for filename in os.listdir(LOG_DIR):
     if (
@@ -79,12 +85,6 @@ for filename in os.listdir(OLD_LOG_DIR):
 if os.path.exists(latest_log_symlink) or os.path.islink(latest_log_symlink):
     os.remove(latest_log_symlink)
 os.symlink(os.path.basename(log_filename), latest_log_symlink)
-
-logging.basicConfig(
-    filename=log_filename,
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
 
 # === Search Resources Across All Regions ===
 def search_all_regions_and_save():

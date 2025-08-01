@@ -36,6 +36,13 @@ os.makedirs(OLD_LOG_DIR, exist_ok=True)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = os.path.join(LOG_DIR, f"exa_maintenance_reports_{timestamp}.log")
 latest_log_symlink = os.path.join(LOG_DIR, "latest_exa_maintenance.log")
+# Setup logging
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+
 # Zip old logs
 for filename in os.listdir(LOG_DIR):
     if (
@@ -68,13 +75,6 @@ for filename in os.listdir(OLD_LOG_DIR):
 if os.path.exists(latest_log_symlink) or os.path.islink(latest_log_symlink):
     os.remove(latest_log_symlink)
 os.symlink(f"exa_maintenance_reports_{timestamp}.log", latest_log_symlink)
-
-# Setup logging
-logging.basicConfig(
-    filename=log_filename,
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
 
 # 💡 Initialize Oracle Thick Client
 oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])

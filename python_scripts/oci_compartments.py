@@ -45,6 +45,12 @@ oracledb.init_oracle_client(lib_dir=config["oracle_client_lib_dir"])
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_filename = os.path.join(log_dir, f"compartments_{timestamp}.log")
 latest_log_symlink = os.path.join(log_dir, "latest_compartments.log")
+# Setup logging
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
 # Zip old logs
 for filename in os.listdir(LOG_DIR):
     if (
@@ -77,13 +83,6 @@ for filename in os.listdir(OLD_LOG_DIR):
 if os.path.exists(latest_log_symlink) or os.path.islink(latest_log_symlink):
     os.remove(latest_log_symlink)
 os.symlink(f"compartments_{timestamp}.log", latest_log_symlink)
-
-# Setup logging
-logging.basicConfig(
-    filename=log_filename,
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
 
 def get_secret_value(secret_ocid, signer):
     secrets_client = oci.secrets.SecretsClient({}, signer=signer)
