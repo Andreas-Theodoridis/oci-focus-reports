@@ -33,7 +33,7 @@ prompt APPLICATION 1200 - Focus Cost Reporting
 -- Application Export:
 --   Application:     1200
 --   Name:            Focus Cost Reporting
---   Date and Time:   13:10 Friday August 1, 2025
+--   Date and Time:   13:41 Friday August 1, 2025
 --   Exported By:     OCI_FOCUS_REPORTS
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -43,7 +43,7 @@ prompt APPLICATION 1200 - Focus Cost Reporting
 --       Validations:              2
 --       Processes:               30
 --       Regions:                215
---       Buttons:                 58
+--       Buttons:                 59
 --       Dynamic Actions:         77
 --     Shared Components:
 --       Logic:
@@ -121,7 +121,7 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_value_01=>'Focus Cost Reporting'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>1283
-,p_version_scn=>45194997340829
+,p_version_scn=>45195143242730
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
@@ -27283,6 +27283,7 @@ wwv_flow_imp_page.create_ig_report_view(
  p_id=>wwv_flow_imp.id(12389456941631604)
 ,p_report_id=>wwv_flow_imp.id(12389210897631602)
 ,p_view_type=>'GRID'
+,p_stretch_columns=>true
 ,p_srv_exclude_null_values=>false
 ,p_srv_only_display_columns=>true
 ,p_edit_mode=>false
@@ -27290,15 +27291,15 @@ wwv_flow_imp_page.create_ig_report_view(
 wwv_flow_imp_page.create_ig_report_column(
  p_id=>wwv_flow_imp.id(12389920831631614)
 ,p_view_id=>wwv_flow_imp.id(12389456941631604)
-,p_display_seq=>1
+,p_display_seq=>2
 ,p_column_id=>wwv_flow_imp.id(11675173703386632)
-,p_is_visible=>true
+,p_is_visible=>false
 ,p_is_frozen=>false
 );
 wwv_flow_imp_page.create_ig_report_column(
  p_id=>wwv_flow_imp.id(12390745285631621)
 ,p_view_id=>wwv_flow_imp.id(12389456941631604)
-,p_display_seq=>2
+,p_display_seq=>3
 ,p_column_id=>wwv_flow_imp.id(11675274470386633)
 ,p_is_visible=>true
 ,p_is_frozen=>false
@@ -27306,7 +27307,7 @@ wwv_flow_imp_page.create_ig_report_column(
 wwv_flow_imp_page.create_ig_report_column(
  p_id=>wwv_flow_imp.id(12391602696631626)
 ,p_view_id=>wwv_flow_imp.id(12389456941631604)
-,p_display_seq=>3
+,p_display_seq=>4
 ,p_column_id=>wwv_flow_imp.id(11675326655386634)
 ,p_is_visible=>true
 ,p_is_frozen=>false
@@ -27314,7 +27315,7 @@ wwv_flow_imp_page.create_ig_report_column(
 wwv_flow_imp_page.create_ig_report_column(
  p_id=>wwv_flow_imp.id(12392596434631631)
 ,p_view_id=>wwv_flow_imp.id(12389456941631604)
-,p_display_seq=>4
+,p_display_seq=>5
 ,p_column_id=>wwv_flow_imp.id(11675451769386635)
 ,p_is_visible=>true
 ,p_is_frozen=>false
@@ -27322,7 +27323,7 @@ wwv_flow_imp_page.create_ig_report_column(
 wwv_flow_imp_page.create_ig_report_column(
  p_id=>wwv_flow_imp.id(12393469194631637)
 ,p_view_id=>wwv_flow_imp.id(12389456941631604)
-,p_display_seq=>5
+,p_display_seq=>6
 ,p_column_id=>wwv_flow_imp.id(11675596521386636)
 ,p_is_visible=>true
 ,p_is_frozen=>false
@@ -27330,10 +27331,10 @@ wwv_flow_imp_page.create_ig_report_column(
 wwv_flow_imp_page.create_ig_report_column(
  p_id=>wwv_flow_imp.id(12400885789938753)
 ,p_view_id=>wwv_flow_imp.id(12389456941631604)
-,p_display_seq=>0
+,p_display_seq=>1
 ,p_column_id=>wwv_flow_imp.id(11676381815386644)
 ,p_is_visible=>true
-,p_is_frozen=>false
+,p_is_frozen=>true
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(11675818176386639)
@@ -27351,7 +27352,8 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(11674714322386628)
 ,p_plug_name=>'Settings'
-,p_region_template_options=>'#DEFAULT#:t-Region--removeHeader js-removeLandmark:t-Region--noBorder:t-Region--scrollBody'
+,p_title=>'Please select or create <br> a report below <span class="fa fa-hand-o-down" aria-hidden="true"> '
+,p_region_template_options=>'#DEFAULT#:t-Region--noBorder:t-Region--scrollBody'
 ,p_plug_template=>wwv_flow_imp.id(20494277378089660)
 ,p_plug_display_sequence=>30
 ,p_plug_new_grid_row=>false
@@ -27500,12 +27502,13 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'123859'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
+,p_display_rows=>20
 ,p_report_columns=>'DATE_BUCKET:WORKLOAD_NAME:COST:'
 ,p_sort_column_1=>'DATE_BUCKET'
 ,p_sort_direction_1=>'DESC'
 );
 wwv_flow_imp_page.create_worksheet_condition(
- p_id=>wwv_flow_imp.id(12433179636937130)
+ p_id=>wwv_flow_imp.id(12675523117615997)
 ,p_report_id=>wwv_flow_imp.id(12385857609590438)
 ,p_condition_type=>'FILTER'
 ,p_allow_delete=>'Y'
@@ -27517,14 +27520,14 @@ wwv_flow_imp_page.create_worksheet_condition(
 ,p_enabled=>'Y'
 );
 wwv_flow_imp_page.create_worksheet_pivot(
- p_id=>wwv_flow_imp.id(12433505961937138)
+ p_id=>wwv_flow_imp.id(12675970827615994)
 ,p_report_id=>wwv_flow_imp.id(12385857609590438)
 ,p_pivot_columns=>'WORKLOAD_NAME'
 ,p_row_columns=>'DATE_BUCKET'
 );
 wwv_flow_imp_page.create_worksheet_pivot_agg(
- p_id=>wwv_flow_imp.id(12433965250937141)
-,p_pivot_id=>wwv_flow_imp.id(12433505961937138)
+ p_id=>wwv_flow_imp.id(12676340747615991)
+,p_pivot_id=>wwv_flow_imp.id(12675970827615994)
 ,p_display_seq=>1
 ,p_function_name=>'SUM'
 ,p_column_name=>'COST'
@@ -27533,8 +27536,8 @@ wwv_flow_imp_page.create_worksheet_pivot_agg(
 ,p_format_mask=>'999G999G999G999G990'
 );
 wwv_flow_imp_page.create_worksheet_pivot_sort(
- p_id=>wwv_flow_imp.id(12434391928937143)
-,p_pivot_id=>wwv_flow_imp.id(12433505961937138)
+ p_id=>wwv_flow_imp.id(12676735413615989)
+,p_pivot_id=>wwv_flow_imp.id(12675970827615994)
 ,p_sort_seq=>1
 ,p_sort_column_name=>'DATE_BUCKET'
 ,p_sort_direction=>'DESC'
@@ -28384,9 +28387,21 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--primary:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
-,p_button_image_alt=>'Open My Reports'
+,p_button_image_alt=>'Manage My Reports'
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-trend-up'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(12650169310688811)
+,p_button_sequence=>60
+,p_button_plug_id=>wwv_flow_imp.id(41746902618293358)
+,p_button_name=>'Submit'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--success:t-Button--iconLeft'
+,p_button_template_id=>2082829544945815391
+,p_button_image_alt=>'Submit'
+,p_icon_css_classes=>'fa-database-play'
 ,p_grid_new_row=>'Y'
 );
 wwv_flow_imp_page.create_page_button(
