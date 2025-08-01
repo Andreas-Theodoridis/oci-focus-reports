@@ -33,7 +33,7 @@ prompt APPLICATION 1200 - Focus Cost Reporting
 -- Application Export:
 --   Application:     1200
 --   Name:            Focus Cost Reporting
---   Date and Time:   13:41 Friday August 1, 2025
+--   Date and Time:   16:29 Friday August 1, 2025
 --   Exported By:     OCI_FOCUS_REPORTS
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -121,7 +121,7 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_value_01=>'Focus Cost Reporting'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>1283
-,p_version_scn=>45195143242730
+,p_version_scn=>45195769709018
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
@@ -5734,11 +5734,37 @@ begin
 wwv_flow_imp_shared.create_security_scheme(
  p_id=>wwv_flow_imp.id(20310820628049192)
 ,p_name=>'Contribution Rights'
-,p_scheme_type=>'NATIVE_IS_IN_GROUP'
-,p_attribute_01=>'Contributors'
-,p_attribute_02=>'W'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_scheme   VARCHAR2(100);',
+'  l_dummy    NUMBER;',
+'BEGIN',
+'  SELECT authentication_scheme',
+'  INTO l_scheme',
+'  FROM apex_applications',
+'  WHERE application_id = v(''APP_ID'');',
+'',
+'  IF l_scheme = ''Oracle APEX Accounts'' THEN',
+'    RETURN APEX_UTIL.CURRENT_USER_IN_GROUP(''Contributors'');',
+'',
+'  ELSIF l_scheme = ''OCI IAM OAuth'' THEN',
+'    BEGIN',
+'      SELECT 1 INTO l_dummy',
+'      FROM apex_workspace_session_groups',
+'      WHERE apex_session_id = TO_NUMBER(v(''APP_SESSION''))',
+'        AND group_name = ''CA_APEX_USERS'';',
+'      RETURN TRUE;',
+'    EXCEPTION',
+'      WHEN NO_DATA_FOUND THEN',
+'        RETURN FALSE;',
+'    END;',
+'  END IF;',
+'',
+'  RETURN FALSE;',
+'END;'))
 ,p_error_message=>'Insufficient privileges, user is not a Contributor'
-,p_version_scn=>44989289488404
+,p_version_scn=>45195769709003
 ,p_caching=>'BY_USER_BY_PAGE_VIEW'
 );
 end;
@@ -5762,11 +5788,37 @@ begin
 wwv_flow_imp_shared.create_security_scheme(
  p_id=>wwv_flow_imp.id(76496375680622237)
 ,p_name=>'Administration Rights'
-,p_scheme_type=>'NATIVE_IS_IN_GROUP'
-,p_attribute_01=>'Administrators'
-,p_attribute_02=>'W'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_scheme   VARCHAR2(100);',
+'  l_dummy    NUMBER;',
+'BEGIN',
+'  SELECT authentication_scheme',
+'  INTO l_scheme',
+'  FROM apex_applications',
+'  WHERE application_id = v(''APP_ID'');',
+'',
+'  IF l_scheme = ''Oracle APEX Accounts'' THEN',
+'    RETURN APEX_UTIL.CURRENT_USER_IN_GROUP(''Administrators'');',
+'',
+'  ELSIF l_scheme = ''OCI IAM OAuth'' THEN',
+'    BEGIN',
+'      SELECT 1 INTO l_dummy',
+'      FROM apex_workspace_session_groups',
+'      WHERE apex_session_id = TO_NUMBER(v(''APP_SESSION''))',
+'        AND group_name = ''CA_APEX_ADMINS'';',
+'      RETURN TRUE;',
+'    EXCEPTION',
+'      WHEN NO_DATA_FOUND THEN',
+'        RETURN FALSE;',
+'    END;',
+'  END IF;',
+'',
+'  RETURN FALSE;',
+'END;'))
 ,p_error_message=>'Insufficient privileges, user is not an Administrator'
-,p_version_scn=>44989289450500
+,p_version_scn=>45195767406902
 ,p_caching=>'BY_USER_BY_PAGE_VIEW'
 );
 end;

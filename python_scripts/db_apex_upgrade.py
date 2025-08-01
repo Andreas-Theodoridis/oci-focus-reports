@@ -351,10 +351,37 @@ def main():
             content = src.read()
             dst.write(content)
             if not content.strip().endswith("EXIT;"):
-                dst.write("\nEXIT;\n")
-        
+                dst.write("\n")
+
+            # Add authentication scheme reset block
+            logging.info("🔒 Appending block to reset authentication scheme...")
+            dst.write("""
+    DECLARE
+        l_scheme_name VARCHAR2(100);
+    BEGIN
+        -- Get scheme name from your app config table
+        SELECT config_value
+        INTO l_scheme_name
+        FROM app_config
+        WHERE config_key = 'l_auth_scheme_name';
+
+        -- Set workspace context
+        apex_util.set_security_group_id(
+            apex_util.find_security_group_id(p_workspace => 'OCI_FOCUS_REPORTS')
+        );
+
+        -- Set the active authentication scheme by name
+        apex_application_admin.set_authentication_scheme(
+            p_application_id => 1200,
+            p_name           => l_scheme_name
+        );
+    END;
+    /
+    EXIT;
+    """)
+
         execute_sql_script(apex_temp_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
-        
+
         with open(checksum_path, "w") as f:
             f.write(current_checksum)
 
