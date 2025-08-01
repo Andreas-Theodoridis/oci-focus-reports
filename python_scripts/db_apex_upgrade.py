@@ -344,12 +344,21 @@ def main():
         with open(checksum_path, "r") as f:
             previous_checksum = f.read().strip()
 
-    if current_checksum != previous_checksum:
-        logging.info("🔍 Detected change in install_ov_apex_app.sql.")
-        if input("❓ Do you want to install/update APEX app? (y/N): ").strip().lower() == 'y':
-            execute_sql_script(apex_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
-            with open(checksum_path, "w") as f:
-                f.write(current_checksum)
+    if input("❓ Do you want to install/update APEX app? (y/N): ").strip().lower() == 'y':
+        apex_temp_path = os.path.join(app_dir, "db_scripts", "install_ov_apex_app_temp.sql")
+        
+        with open(apex_path, "r") as src, open(apex_temp_path, "w") as dst:
+            content = src.read()
+            dst.write(content)
+            if not content.strip().endswith("EXIT;"):
+                dst.write("\nEXIT;\n")
+        
+        execute_sql_script(apex_temp_path, db_user, db_pass, db_dsn, "install_ov_apex_app.sql")
+        
+        with open(checksum_path, "w") as f:
+            f.write(current_checksum)
+
+        os.remove(apex_temp_path)
     else:
         logging.info("✅ No changes detected in APEX app script. Skipping.")
 
