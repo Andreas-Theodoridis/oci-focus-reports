@@ -33,7 +33,7 @@ prompt APPLICATION 1200 - Focus Cost Reporting
 -- Application Export:
 --   Application:     1200
 --   Name:            Focus Cost Reporting
---   Date and Time:   12:36 Friday August 1, 2025
+--   Date and Time:   13:10 Friday August 1, 2025
 --   Exported By:     OCI_FOCUS_REPORTS
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -121,7 +121,7 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_value_01=>'Focus Cost Reporting'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>1283
-,p_version_scn=>45194345069677
+,p_version_scn=>45194997340829
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
@@ -8597,6 +8597,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'126403'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
+,p_report_columns=>'MONTH:MONTH_TO_DATE_COST:PROJECTED_FULL_MONTH_COST:'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(12413107940382344)
@@ -28426,7 +28427,7 @@ wwv_flow_imp_page.create_page_item(
   'min_chars', '0',
   'use_defaults', 'Y')).to_clob
 ,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+,p_multi_value_separator=>','
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(11676056141386641)
@@ -28607,7 +28608,7 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_triggering_element=>'P7_COMPARTMENT_SELECT'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
+,p_bind_event_type=>'focusout'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(11676249977386643)
@@ -39385,4 +39386,3 @@ end;
 /
 set verify on feedback on define on
 prompt  ...done
-EXIT;
