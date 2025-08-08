@@ -133,6 +133,14 @@ where apex_session_id = :app_session
 and group_name in ('CA_APEX_ADMINS')
 ```
 
+### 10.4 Update config table to retain setting after apex app update:
+
+#### Update table APP_CONFIG as OCI_FOCUS_REPORTS user:
+```sql
+UPDATE app_config set CONFIG_VALUE='OCI IAM OAuth' where CONFIG_KEY='l_auth_scheme_name';
+commit;
+```
+
 ---
 
 ## 11. 🧾 Application Setup Steps

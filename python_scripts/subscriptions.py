@@ -216,6 +216,7 @@ if __name__ == "__main__":
             with oracledb.connect(user=db_user, password=db_password, dsn=db_dsn) as final_conn:
                 final_cursor = final_conn.cursor()
                 log_and_execute(final_cursor, "BEGIN UPDATE_OCI_SUBSCRIPTION_DETAILS; END;")
+                log_and_execute(final_cursor, "BEGIN refresh_credit_consumption_state_proc; END;")
                 final_conn.commit()
                 final_cursor.close()
                 logging.info("✅ Procedure UPDATE_OCI_SUBSCRIPTION_DETAILS executed successfully.")
