@@ -52,13 +52,13 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
 # Zip old logs
-for filename in os.listdir(LOG_DIR):
+for filename in os.listdir(log_dir):
     if (
         fnmatch.fnmatch(filename, log_file_pattern)
         and filename != os.path.basename(log_filename)
         and not filename.endswith(".gz")
     ):
-        full_path = os.path.join(LOG_DIR, filename)
+        full_path = os.path.join(log_dir, filename)
         gz_temp_path = full_path + ".gz"
         final_gz_path = os.path.join(OLD_LOG_DIR, os.path.basename(gz_temp_path))
 
