@@ -13,7 +13,7 @@ import oracledb
 app_dir    = "/home/opc/oci-focus-reports"
 config_dir = os.path.join(app_dir, "config")
 log_dir    = os.path.join(app_dir, "logs")
-OLD_LOG_DIR = os.path.join(LOG_DIR, "old")
+OLD_LOG_DIR = os.path.join(log_dir, "old")
 output_dir = os.path.join(app_dir, "data", "subscriptions")
 
 os.makedirs(log_dir, exist_ok=True)
