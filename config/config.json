@@ -6,6 +6,7 @@
   "compartments_table": "OCI_COMPARTMENTS_PY",
   "focus_reports_table": "FOCUS_REPORTS_PY",
   "oci_subscriptions_table": "OCI_SUBSCRIPTIONS_PY",
+  "oci_subscription_commitments_table": "OCI_SUBSCRIPTION_COMMITMENTS",
   "resources_table": "OCI_RESOURCES_PY",
   "resource_relationship_table": "OCI_RESOURCES_RELATIONSHIPS_PY",
   "exa_maintenance_metrics_table": "OCI_EXA_MAINTENANCE_PY",

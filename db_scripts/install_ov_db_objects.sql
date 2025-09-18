@@ -406,6 +406,21 @@ CREATE TABLE "OCI_FOCUS_REPORTS"."CREDIT_CONSUMPTION_STATE" (
    )  DEFAULT COLLATION "USING_NLS_COMP" ;
 
 --------------------------------------------------------
+--  DDL for Table OCI_SUBSCRIPTION_COMMITMENTS
+--------------------------------------------------------
+
+CREATE TABLE "OCI_FOCUS_REPORTS"."OCI_SUBSCRIPTION_COMMITMENTS" (
+  "SUBSCRIPTION_ID"           VARCHAR2(255)   NOT NULL,
+  "SUBSCRIPTION_LINE_ID"      VARCHAR2(255)   NOT NULL,
+  "COMMITMENT_TIME_START"     TIMESTAMP(6)    NULL,
+  "COMMITMENT_TIME_END"       TIMESTAMP(6)    NULL,
+  "COMMITMENT_QUANTITY"       VARCHAR2(100)   NULL,
+  "COMMITMENT_AVAILABLE_AMT"  VARCHAR2(100)   NULL,
+  "COMMITMENT_LINE_NET_AMT"   VARCHAR2(100)   NULL,
+  "COMMITMENT_FA_VALUE"       VARCHAR2(100)   NULL
+);
+
+--------------------------------------------------------
 --  DDL for Table OCI_WORKLOADS
 --------------------------------------------------------
 
