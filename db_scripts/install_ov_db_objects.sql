@@ -880,7 +880,7 @@ END;
 --------------------------------------------------------
 --  DDL for Procedure update_oci_subscription_details proc
 --------------------------------------------------------
-CREATE OR REPLACE PROCEDURE update_oci_subscription_details AS
+create or replace PROCEDURE OCI_FOCUS_REPORTS.update_oci_subscription_details AS
 BEGIN
   MERGE INTO OCI_SUBSCRIPTION_DETAILS dst
   USING (
@@ -924,7 +924,7 @@ END;
 --  DDL for Procedure refresh_credit_consumption_state_proc
 --------------------------------------------------------
 
-create or replace PROCEDURE                   refresh_credit_consumption_state_proc IS
+create or replace PROCEDURE OCI_FOCUS_REPORTS.refresh_credit_consumption_state_proc IS
 
   -- Record for credit_consumption_state rows
   TYPE slice_rec IS RECORD (
@@ -957,7 +957,7 @@ create or replace PROCEDURE                   refresh_credit_consumption_state_p
   v_last_date DATE;
 BEGIN
   -----------------------------------------------------------------------------
-  -- Phase 1: Truncate and Populate credit_consumption_state
+  -- Phase 1: Truncate and populate CREDIT_CONSUMPTION_STATE from commitments
   -----------------------------------------------------------------------------
   EXECUTE IMMEDIATE 'TRUNCATE TABLE credit_consumption_state';
 
@@ -974,123 +974,85 @@ BEGIN
     last_consumed_at,
     last_updated
   )
+  WITH base AS (
+    /* Pull commitments + a representative order_number and iso_code per subscription */
+    SELECT
+      c.subscription_id,
+      c.commitment_time_start,
+      c.commitment_time_end,
+      /* numeric scrubbing for VARCHAR2 amounts */
+      TO_NUMBER(REGEXP_REPLACE(c.commitment_quantity,      '[^0-9\.\-]', '')) AS per_year_amt,
+      TO_NUMBER(REGEXP_REPLACE(c.commitment_available_amt, '[^0-9\.\-]', '')) AS avail_amt,
+      /* context from the PY table by subscription_id */
+      ( SELECT MIN(order_number)
+          FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY sp
+         WHERE sp.subscription_id = c.subscription_id
+      ) AS order_number,
+      ( SELECT MIN(iso_code)
+          FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY sp
+         WHERE sp.subscription_id = c.subscription_id
+      ) AS iso_code
+    FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTION_COMMITMENTS c
+    WHERE c.commitment_time_start IS NOT NULL
+      AND c.commitment_time_end   IS NOT NULL
+  ),
+  cur_slice AS (
+    /* Compute current contract-year slice aligned to the commitment’s anniversary */
+    SELECT
+      b.subscription_id,
+      b.order_number,
+      b.iso_code,
+      b.per_year_amt,
+      b.avail_amt,
+      /* year index since commitment start; if negative, exclude later */
+      FLOOR(MONTHS_BETWEEN(SYSDATE, b.commitment_time_start) / 12) AS k,
+      ADD_MONTHS(TRUNC(b.commitment_time_start),
+                 12 * FLOOR(MONTHS_BETWEEN(SYSDATE, b.commitment_time_start) / 12)) AS slice_start,
+      LEAST(
+        ADD_MONTHS(
+          ADD_MONTHS(TRUNC(b.commitment_time_start),
+                     12 * FLOOR(MONTHS_BETWEEN(SYSDATE, b.commitment_time_start) / 12)
+          ), 12
+        ) - 1,
+        b.commitment_time_end
+      ) AS slice_end
+    FROM base b
+  ),
+  filtered AS (
+    /* Keep only the commitments where SYSDATE falls within the computed slice */
+    SELECT *
+    FROM cur_slice
+    WHERE per_year_amt IS NOT NULL
+      AND per_year_amt > 0
+      AND k >= 0
+      AND SYSDATE BETWEEN slice_start AND slice_end
+  )
   SELECT
     subscription_id,
     subscription_id AS billingaccountid,
     order_number,
-    TRUNC(ADD_MONTHS(
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE),
-      (TRUNC(MONTHS_BETWEEN(SYSDATE, CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)) / 12)) * 12
-    )) AS time_start,
-    LEAST(
-      TRUNC(ADD_MONTHS(
-        CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE),
-        (TRUNC(MONTHS_BETWEEN(SYSDATE, CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)) / 12) + 1) * 12
-      )) - 1,
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) AS time_end,
-
-    TO_NUMBER(
-      CASE
-        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(quantity))
-        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(original_promo_amount))
-        ELSE NULL
-      END
-    ) / NULLIF(GREATEST(ROUND((
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) / 365.0), 1), 0) AS original_quantity,
-
+    slice_start AS time_start,
+    slice_end   AS time_end,
+    per_year_amt AS original_quantity,
+    /* remaining = available - (k * per_year); null it out if <= 200 (your rule) */
     CASE
-      WHEN (TO_NUMBER(available_amount) - (
-        NULLIF(ROUND((
-          CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-          CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-        ) / 365), 0) -
-        (TRUNC(MONTHS_BETWEEN(SYSDATE, CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)) / 12) + 1)
-      ) * (
-        TO_NUMBER(
-          CASE
-        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(quantity))
-        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(original_promo_amount))
-        ELSE NULL
-          END
-        ) / NULLIF(GREATEST(ROUND((
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) / 365.0), 1), 0)
-      )) <= 200 THEN NULL
-      ELSE TO_NUMBER(available_amount) - (
-        (NULLIF(GREATEST(ROUND((
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) / 365.0), 1), 0) -
-        (TRUNC(MONTHS_BETWEEN(SYSDATE, CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)) / 12) + 1)
-        ) * (
-          TO_NUMBER(
-            CASE
-        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(quantity))
-        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(original_promo_amount))
-        ELSE NULL
-            END
-          ) / NULLIF(GREATEST(ROUND((
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) / 365.0), 1), 0)
-        )
-      )
+      WHEN (avail_amt - (per_year_amt * k)) <= 200 THEN NULL
+      ELSE (avail_amt - (per_year_amt * k))
     END AS remaining_quantity,
-
     CASE
-      WHEN (TO_NUMBER(available_amount) - (
-        NULLIF(ROUND((
-          CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-          CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-        ) / 365), 0) -
-        (TRUNC(MONTHS_BETWEEN(SYSDATE, CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)) / 12) + 1)
-      ) * (
-        TO_NUMBER(
-          CASE
-        WHEN quantity IS NOT NULL AND TRIM(quantity) != '0' AND REGEXP_LIKE(TRIM(quantity), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(quantity))
-        WHEN original_promo_amount IS NOT NULL AND TRIM(original_promo_amount) != '0' AND REGEXP_LIKE(TRIM(original_promo_amount), '^[0-9]+(\.[0-9]+)?$')
-          THEN TO_NUMBER(TRIM(original_promo_amount))
-        ELSE NULL
-          END
-        ) / NULLIF(GREATEST(ROUND((
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) -
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE)
-    ) / 365.0), 1), 0)
-      )) <= 200 THEN 1
-      ELSE 0
+      WHEN avail_amt <= 200 THEN 1 ELSE 0
     END AS depleted,
-
     iso_code,
     NULL AS last_consumed_at,
-    SYSDATE
+    SYSDATE AS last_updated
+  FROM filtered;
 
-  FROM oci_subscriptions_py
-  WHERE available_amount IS NOT NULL
-    AND ((quantity IS NOT NULL AND REGEXP_LIKE(quantity, '^[0-9]+(\\.[0-9]+)?$') AND TO_NUMBER(quantity) > 0)
-         OR (original_promo_amount IS NOT NULL AND REGEXP_LIKE(original_promo_amount, '^[0-9]+(\\.[0-9]+)?$') AND TO_NUMBER(original_promo_amount) > 0))
-    AND time_start IS NOT NULL
-    AND time_end IS NOT NULL
-    AND substatus = 'ACTIVE'
-    AND SYSDATE BETWEEN
-      CAST(TO_TIMESTAMP_TZ(time_start, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE) AND
-      CAST(TO_TIMESTAMP_TZ(time_end, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM') AS DATE);
+  -----------------------------------------------------------------------------
+  -- Phase 2: Update LAST_CONSUMED_AT by back-calculating from current active order
+  -- (unchanged)
+  -----------------------------------------------------------------------------
 
------------------------------------------------------------------------------
--- Phase 2: Update LAST_CONSUMED_AT by back-calculating from current active order
------------------------------------------------------------------------------
-
-    FOR sub IN (SELECT DISTINCT subscription_id FROM credit_consumption_state) LOOP
+  FOR sub IN (SELECT DISTINCT subscription_id FROM credit_consumption_state) LOOP
 
     v_used := NULL;
     slices.DELETE;
@@ -1098,40 +1060,40 @@ BEGIN
 
     -- Step 1: Get consumed amount from latest non-depleted order
     BEGIN
-        SELECT original_quantity - NVL(remaining_quantity, 0)
+      SELECT original_quantity - NVL(remaining_quantity, 0)
         INTO v_used
         FROM (
-        SELECT original_quantity, remaining_quantity
-        FROM credit_consumption_state
-        WHERE subscription_id = sub.subscription_id AND depleted = 0
-        ORDER BY time_start DESC
+          SELECT original_quantity, remaining_quantity
+            FROM credit_consumption_state
+           WHERE subscription_id = sub.subscription_id AND depleted = 0
+           ORDER BY time_start DESC
         )
-        WHERE ROWNUM = 1;
+       WHERE ROWNUM = 1;
     EXCEPTION
-        WHEN NO_DATA_FOUND THEN
+      WHEN NO_DATA_FOUND THEN
         CONTINUE;
     END;
 
     -- Step 2: Get ALL depleted = 1 rows ordered by time_start DESC
     SELECT rowid, subscription_id, time_start, original_quantity, NVL(remaining_quantity, 0), depleted
-    BULK COLLECT INTO slices
-    FROM credit_consumption_state
-    WHERE subscription_id = sub.subscription_id AND depleted = 1
-    ORDER BY time_start DESC;
+      BULK COLLECT INTO slices
+      FROM credit_consumption_state
+     WHERE subscription_id = sub.subscription_id AND depleted = 1
+     ORDER BY time_start DESC;
 
     slice_count := slices.COUNT;
 
     -- Skip if no depleted slices
     IF slice_count = 0 THEN
-        CONTINUE;
+      CONTINUE;
     END IF;
 
     -- Step 3: Get charges, newest to oldest
     SELECT chargeperiodstart, billedcost
-    BULK COLLECT INTO charges
-    FROM focus_reports_py
-    WHERE billingaccountid = sub.subscription_id AND billedcost > 0
-    ORDER BY chargeperiodstart DESC;
+      BULK COLLECT INTO charges
+      FROM focus_reports_py
+     WHERE billingaccountid = sub.subscription_id AND billedcost > 0
+     ORDER BY chargeperiodstart DESC;
 
     charge_count := charges.COUNT;
     last_index := 1;
@@ -1140,42 +1102,42 @@ BEGIN
     running_total := 0;
 
     FOR j IN last_index .. charge_count LOOP
-        running_total := running_total + charges(j).billedcost;
+      running_total := running_total + charges(j).billedcost;
 
-        IF running_total >= v_used THEN
+      IF running_total >= v_used THEN
         UPDATE credit_consumption_state
-        SET last_consumed_at = charges(j).chargeperiodstart
-        WHERE ROWID = slices(1).rid;
+           SET last_consumed_at = charges(j).chargeperiodstart
+         WHERE ROWID = slices(1).rid;
 
         v_last_date := charges(j).chargeperiodstart;
         last_index := j + 1;
         EXIT;
-        END IF;
+      END IF;
     END LOOP;
 
     -- Step 5: Remaining depleted slices get full original_quantity matched
     FOR i IN 2 .. slice_count LOOP
-        running_total := 0;
+      running_total := 0;
 
-        FOR j IN last_index .. charge_count LOOP
+      FOR j IN last_index .. charge_count LOOP
         -- Only use charges before the last known consumed date
         IF charges(j).chargeperiodstart < v_last_date THEN
-            running_total := running_total + charges(j).billedcost;
+          running_total := running_total + charges(j).billedcost;
 
-            IF running_total >= slices(i - 1).original_quantity THEN
+          IF running_total >= slices(i - 1).original_quantity THEN
             UPDATE credit_consumption_state
-            SET last_consumed_at = charges(j).chargeperiodstart
-            WHERE ROWID = slices(i).rid;
+               SET last_consumed_at = charges(j).chargeperiodstart
+             WHERE ROWID = slices(i).rid;
 
             v_last_date := charges(j).chargeperiodstart;
             last_index := j + 1;
             EXIT;
-            END IF;
+          END IF;
         END IF;
-        END LOOP;
+      END LOOP;
     END LOOP;
 
-    END LOOP;
+  END LOOP;
 
   COMMIT;
 END;
