@@ -880,43 +880,39 @@ END;
 --------------------------------------------------------
 --  DDL for Procedure update_oci_subscription_details proc
 --------------------------------------------------------
-create or replace PROCEDURE OCI_FOCUS_REPORTS.update_oci_subscription_details AS
+CREATE OR REPLACE PROCEDURE OCI_FOCUS_REPORTS.update_oci_subscription_details AS
 BEGIN
   MERGE INTO OCI_SUBSCRIPTION_DETAILS dst
   USING (
-    SELECT
+    /* Build a clean, deduplicated source set */
+    SELECT DISTINCT
+      /* keep only rows with numeric sub/order ids to avoid ORA-01722 */
       TO_NUMBER(SUBSCRIPTION_ID) AS SUBSCRIPTION_ID,
       TIME_START,
       TIME_END,
-      TO_NUMBER(ORDER_NUMBER) AS ORDER_ID,
-      TO_NUMBER(ORIGINAL_QUANTITY) AS ORIGINAL_QUANTITY
+      TO_NUMBER(ORDER_NUMBER)     AS ORDER_ID,
+      ORIGINAL_QUANTITY           AS QUANTITY
     FROM CREDIT_CONSUMPTION_STATE
     WHERE SUBSCRIPTION_ID IS NOT NULL
-      AND ORDER_NUMBER IS NOT NULL
+      AND ORDER_NUMBER   IS NOT NULL
+      AND REGEXP_LIKE(SUBSCRIPTION_ID, '^\d+$')
+      AND REGEXP_LIKE(ORDER_NUMBER,   '^\d+$')
   ) src
   ON (
     dst.SUBSCRIPTION_ID = src.SUBSCRIPTION_ID
-    AND dst.ORDER_ID = src.ORDER_ID
-    AND dst.TIME_START = src.TIME_START
-    AND dst.TIME_END = src.TIME_END
-    AND dst.QUANTITY = src.ORIGINAL_QUANTITY
+    AND dst.ORDER_ID     = src.ORDER_ID
+    AND dst.TIME_START   = src.TIME_START
+    AND dst.TIME_END     = src.TIME_END
   )
+  WHEN MATCHED THEN
+    UPDATE SET
+      dst.QUANTITY = src.QUANTITY
+    WHERE NVL(dst.QUANTITY, -1) <> NVL(src.QUANTITY, -1)
   WHEN NOT MATCHED THEN
-    INSERT (
-      SUBSCRIPTION_ID,
-      TIME_START,
-      TIME_END,
-      ORDER_ID,
-      QUANTITY
-    )
-    VALUES (
-      src.SUBSCRIPTION_ID,
-      src.TIME_START,
-      src.TIME_END,
-      src.ORDER_ID,
-      src.ORIGINAL_QUANTITY
-    );
-    COMMIT;
+    INSERT (SUBSCRIPTION_ID, TIME_START, TIME_END, ORDER_ID, QUANTITY)
+    VALUES (src.SUBSCRIPTION_ID, src.TIME_START, src.TIME_END, src.ORDER_ID, src.QUANTITY);
+
+  COMMIT;
 END;
 /
 
@@ -924,16 +920,16 @@ END;
 --  DDL for Procedure refresh_credit_consumption_state_proc
 --------------------------------------------------------
 
-create or replace PROCEDURE OCI_FOCUS_REPORTS.refresh_credit_consumption_state_proc IS
+CREATE OR REPLACE PROCEDURE OCI_FOCUS_REPORTS.refresh_credit_consumption_state_proc IS
 
   -- Record for credit_consumption_state rows
   TYPE slice_rec IS RECORD (
-    rid               ROWID,
-    subscription_id   credit_consumption_state.subscription_id%TYPE,
-    time_start        credit_consumption_state.time_start%TYPE,
-    original_quantity credit_consumption_state.original_quantity%TYPE,
+    rid                ROWID,
+    subscription_id    credit_consumption_state.subscription_id%TYPE,
+    time_start         credit_consumption_state.time_start%TYPE,
+    original_quantity  credit_consumption_state.original_quantity%TYPE,
     remaining_quantity credit_consumption_state.remaining_quantity%TYPE,
-    depleted          credit_consumption_state.depleted%TYPE
+    depleted           credit_consumption_state.depleted%TYPE
   );
   TYPE slice_tab IS TABLE OF slice_rec INDEX BY PLS_INTEGER;
 
@@ -944,17 +940,18 @@ create or replace PROCEDURE OCI_FOCUS_REPORTS.refresh_credit_consumption_state_p
   );
   TYPE charge_tab IS TABLE OF charge_rec INDEX BY PLS_INTEGER;
 
-  slices  slice_tab;
-  charges charge_tab;
+  slices        slice_tab;
+  charges       charge_tab;
 
-  i INTEGER;
-  j INTEGER;
-  slice_count INTEGER;
-  charge_count INTEGER;
-  last_index INTEGER;
+  i             INTEGER;
+  j             INTEGER;
+  slice_count   INTEGER;
+  charge_count  INTEGER;
+  last_index    INTEGER;
   running_total NUMBER;
-  v_used NUMBER;
-  v_last_date DATE;
+  v_used        NUMBER;
+  v_last_date   DATE;
+
 BEGIN
   -----------------------------------------------------------------------------
   -- Phase 1: Truncate and populate CREDIT_CONSUMPTION_STATE from commitments
@@ -975,23 +972,14 @@ BEGIN
     last_updated
   )
   WITH base AS (
-    /* Pull commitments + a representative order_number and iso_code per subscription */
+    /* Pull commitments */
     SELECT
       c.subscription_id,
       c.commitment_time_start,
       c.commitment_time_end,
       /* numeric scrubbing for VARCHAR2 amounts */
       TO_NUMBER(REGEXP_REPLACE(c.commitment_quantity,      '[^0-9\.\-]', '')) AS per_year_amt,
-      TO_NUMBER(REGEXP_REPLACE(c.commitment_available_amt, '[^0-9\.\-]', '')) AS avail_amt,
-      /* context from the PY table by subscription_id */
-      ( SELECT MIN(order_number)
-          FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY sp
-         WHERE sp.subscription_id = c.subscription_id
-      ) AS order_number,
-      ( SELECT MIN(iso_code)
-          FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY sp
-         WHERE sp.subscription_id = c.subscription_id
-      ) AS iso_code
+      TO_NUMBER(REGEXP_REPLACE(c.commitment_available_amt, '[^0-9\.\-]', '')) AS avail_amt
     FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTION_COMMITMENTS c
     WHERE c.commitment_time_start IS NOT NULL
       AND c.commitment_time_end   IS NOT NULL
@@ -1000,8 +988,6 @@ BEGIN
     /* Compute current contract-year slice aligned to the commitment’s anniversary */
     SELECT
       b.subscription_id,
-      b.order_number,
-      b.iso_code,
       b.per_year_amt,
       b.avail_amt,
       /* year index since commitment start; if negative, exclude later */
@@ -1028,28 +1014,55 @@ BEGIN
       AND SYSDATE BETWEEN slice_start AND slice_end
   )
   SELECT
-    subscription_id,
-    subscription_id AS billingaccountid,
-    order_number,
-    slice_start AS time_start,
-    slice_end   AS time_end,
-    per_year_amt AS original_quantity,
+    f.subscription_id,
+    f.subscription_id AS billingaccountid,
+
+    /* Correlated lookup to get the order active at slice_start.
+       TIME_START/TIME_END are VARCHAR2(50); parse the first 10 chars as YYYY-MM-DD. */
+    ( SELECT s.order_number
+        FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY s
+       WHERE s.subscription_id = f.subscription_id
+         AND TO_DATE(SUBSTR(s.time_start, 1, 10), 'YYYY-MM-DD') <= f.slice_start
+         AND (s.time_end IS NULL
+              OR TRIM(s.time_end) = ''
+              OR TO_DATE(SUBSTR(s.time_end, 1, 10), 'YYYY-MM-DD') >= f.slice_start)
+       ORDER BY TO_DATE(SUBSTR(s.time_start, 1, 10), 'YYYY-MM-DD') DESC,
+                s.order_number
+       FETCH FIRST 1 ROW ONLY
+    ) AS order_number,
+
+    f.slice_start AS time_start,
+    f.slice_end   AS time_end,
+    f.per_year_amt AS original_quantity,
+
     /* remaining = available - (k * per_year); null it out if <= 200 (your rule) */
     CASE
-      WHEN (avail_amt - (per_year_amt * k)) <= 200 THEN NULL
-      ELSE (avail_amt - (per_year_amt * k))
+      WHEN (f.avail_amt - (f.per_year_amt * f.k)) <= 200 THEN NULL
+      ELSE (f.avail_amt - (f.per_year_amt * f.k))
     END AS remaining_quantity,
+
     CASE
-      WHEN avail_amt <= 200 THEN 1 ELSE 0
+      WHEN f.avail_amt <= 200 THEN 1 ELSE 0
     END AS depleted,
-    iso_code,
+
+    ( SELECT s.iso_code
+        FROM OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY s
+       WHERE s.subscription_id = f.subscription_id
+         AND TO_DATE(SUBSTR(s.time_start, 1, 10), 'YYYY-MM-DD') <= f.slice_start
+         AND (s.time_end IS NULL
+              OR TRIM(s.time_end) = ''
+              OR TO_DATE(SUBSTR(s.time_end, 1, 10), 'YYYY-MM-DD') >= f.slice_start)
+       ORDER BY TO_DATE(SUBSTR(s.time_start, 1, 10), 'YYYY-MM-DD') DESC,
+                s.order_number
+       FETCH FIRST 1 ROW ONLY
+    ) AS iso_code,
+
     NULL AS last_consumed_at,
     SYSDATE AS last_updated
-  FROM filtered;
+  FROM filtered f;
 
   -----------------------------------------------------------------------------
   -- Phase 2: Update LAST_CONSUMED_AT by back-calculating from current active order
-  -- (unchanged)
   -----------------------------------------------------------------------------
 
   FOR sub IN (SELECT DISTINCT subscription_id FROM credit_consumption_state) LOOP
@@ -1065,7 +1078,8 @@ BEGIN
         FROM (
           SELECT original_quantity, remaining_quantity
             FROM credit_consumption_state
-           WHERE subscription_id = sub.subscription_id AND depleted = 0
+           WHERE subscription_id = sub.subscription_id
+             AND depleted = 0
            ORDER BY time_start DESC
         )
        WHERE ROWNUM = 1;
@@ -1078,7 +1092,8 @@ BEGIN
     SELECT rowid, subscription_id, time_start, original_quantity, NVL(remaining_quantity, 0), depleted
       BULK COLLECT INTO slices
       FROM credit_consumption_state
-     WHERE subscription_id = sub.subscription_id AND depleted = 1
+     WHERE subscription_id = sub.subscription_id
+       AND depleted = 1
      ORDER BY time_start DESC;
 
     slice_count := slices.COUNT;
@@ -1092,7 +1107,8 @@ BEGIN
     SELECT chargeperiodstart, billedcost
       BULK COLLECT INTO charges
       FROM focus_reports_py
-     WHERE billingaccountid = sub.subscription_id AND billedcost > 0
+     WHERE billingaccountid = sub.subscription_id
+       AND billedcost > 0
      ORDER BY chargeperiodstart DESC;
 
     charge_count := charges.COUNT;
