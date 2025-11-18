@@ -668,7 +668,7 @@ END;
 --------------------------------------------------------
 set define off;
 
-  CREATE OR REPLACE EDITIONABLE PROCEDURE "OCI_FOCUS_REPORTS"."PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC" AS
+create or replace PROCEDURE "PAGE1_CONS_WRKLD_MONTH_CHART_DATA_PROC" AS
   l_title   VARCHAR2(400);
   l_value   CLOB;
 BEGIN
@@ -715,7 +715,7 @@ END;
 --------------------------------------------------------
 set define off;
 
-  CREATE OR REPLACE EDITIONABLE PROCEDURE "OCI_FOCUS_REPORTS"."PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC" AS
+create or replace PROCEDURE "PAGE1_CONS_WRKLD_WEEK_CHART_DATA_PROC" AS
   l_title   VARCHAR2(400);
   l_value   CLOB;
 BEGIN
@@ -880,7 +880,7 @@ END;
 --------------------------------------------------------
 --  DDL for Procedure update_oci_subscription_details proc
 --------------------------------------------------------
-CREATE OR REPLACE PROCEDURE OCI_FOCUS_REPORTS.update_oci_subscription_details AS
+create or replace PROCEDURE update_oci_subscription_details AS
 BEGIN
   MERGE INTO OCI_SUBSCRIPTION_DETAILS dst
   USING (
@@ -920,7 +920,7 @@ END;
 --  DDL for Procedure refresh_credit_consumption_state_proc
 --------------------------------------------------------
 
-CREATE OR REPLACE PROCEDURE OCI_FOCUS_REPORTS.refresh_credit_consumption_state_proc IS
+create or replace PROCEDURE refresh_credit_consumption_state_proc IS
 
   -- Record for credit_consumption_state rows
   TYPE slice_rec IS RECORD (
