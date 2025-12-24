@@ -106,26 +106,36 @@ def get_all_subscription_ids():
 def list_all_subscriptions(subscription_ids):
     """
     Writes two CSVs:
-      1) oci_subscriptions_combined.csv         -> same columns as before (no schema change)
-      2) oci_subscription_commitments.csv       -> NEW child rows, one per commitment
+      1) oci_subscriptions_combined.csv         -> includes SUBSCRIPTION_LINE_ID (svc.id) for correlation
+      2) oci_subscription_commitments.csv       -> child rows, one per commitment, with SUBSCRIPTION_LINE_ID (svc.id)
+    IMPORTANT:
+      - You must add column SUBSCRIPTION_LINE_ID to OCI_SUBSCRIPTIONS_PY in DB.
+        Example:
+          ALTER TABLE OCI_FOCUS_REPORTS.OCI_SUBSCRIPTIONS_PY ADD (SUBSCRIPTION_LINE_ID VARCHAR2(100));
     """
     subs_csv_path = os.path.join(output_dir, "oci_subscriptions_combined.csv")
     comm_csv_path = os.path.join(output_dir, "oci_subscription_commitments.csv")
 
-    # Keep your existing columns as-is to avoid DB changes on the main table.
+    # Main subscriptions table columns (ADD SUBSCRIPTION_LINE_ID for svc.id correlation)
     subs_fields = [
         "subscription_id", "iso_code", "name", "std_precision",
         "service_name", "status", "available_amount", "booking_opty_number",
-        #"commitment_services", 
         "csi", "data_center_region", "funded_allocation_value",
-        "id", "is_intent_to_pay", "net_unit_price", "operation_type", "order_number",
+
+        # NEW: per subscribed service line id (parent key for commitments)
+        "SUBSCRIPTION_LINE_ID",
+
+        # Keep your existing "id" (this is sub.id / header id) if you still use it downstream
+        "id",
+
+        "is_intent_to_pay", "net_unit_price", "operation_type", "order_number",
         "original_promo_amount", "partner_transaction_type", "pricing_model",
         "product_name", "product_part_number", "product_provisioning_group",
         "product_unit_of_measure", "program_type", "promo_type", "quantity", "substatus",
         "time_end", "time_start", "total_value", "used_amount"
     ]
 
-    # New normalized commitments table columns
+    # Commitments table columns (already has SUBSCRIPTION_LINE_ID)
     comm_fields = [
         "SUBSCRIPTION_ID",
         "SUBSCRIPTION_LINE_ID",
@@ -153,14 +163,18 @@ def list_all_subscriptions(subscription_ids):
                 resp = client.list_subscriptions(
                     compartment_id=tenancy_id,
                     subscription_id=subscription_id,
-                    is_commit_info_required=True   # <-- key change
+                    is_commit_info_required=True
                 )
                 subs = resp.data
 
                 for sub in subs:
                     # Subscribed services array (can be None)
                     for svc in (getattr(sub, "_subscribed_services", None) or [None]):
-                        # Main table row (unchanged schema)
+
+                        # This is the correlation key you need
+                        svc_line_id = getattr(svc, "id", "") if svc else ""
+
+                        # Main table row (now includes SUBSCRIPTION_LINE_ID)
                         row = {
                             "subscription_id": subscription_id,
                             "iso_code": getattr(getattr(sub, "_currency", None), "iso_code", "") if getattr(sub, "_currency", None) else "",
@@ -170,11 +184,16 @@ def list_all_subscriptions(subscription_ids):
                             "status": getattr(sub, "_status", "") or "",
                             "available_amount": getattr(svc, "available_amount", "") if svc else "",
                             "booking_opty_number": getattr(svc, "booking_opty_number", "") if svc else "",
-                            #"commitment_services": getattr(svc, "commitment_services", "") if svc else "",
                             "csi": getattr(svc, "csi", "") if svc else "",
                             "data_center_region": getattr(svc, "data_center_region", "") if svc else "",
                             "funded_allocation_value": getattr(svc, "funded_allocation_value", "") if svc else "",
+
+                            # NEW
+                            "SUBSCRIPTION_LINE_ID": svc_line_id,
+
+                            # existing header id
                             "id": getattr(sub, "id", "") if hasattr(sub, 'id') else "",
+
                             "is_intent_to_pay": getattr(svc, "is_intent_to_pay", "") if svc else "",
                             "net_unit_price": getattr(svc, "net_unit_price", "") if svc else "",
                             "operation_type": getattr(svc, "operation_type", "") if svc else "",
@@ -197,10 +216,8 @@ def list_all_subscriptions(subscription_ids):
                         }
                         subs_writer.writerow(row)
 
-                        # --- NEW: write one row per commitment to the commitments CSV
+                        # Commitments (children of svc_line_id)
                         if svc and getattr(svc, "commitment_services", None):
-                            # Ensure SUBSCRIPTION_LINE_ID is present to satisfy NOT NULL
-                            svc_line_id = getattr(svc, "id", None)
                             if not svc_line_id:
                                 logging.warning(
                                     f"Skipping commitments for subscription {subscription_id}: "
@@ -211,13 +228,12 @@ def list_all_subscriptions(subscription_ids):
                                     comm_writer.writerow({
                                         "SUBSCRIPTION_ID": subscription_id,
                                         "SUBSCRIPTION_LINE_ID": svc_line_id,
-                                        # write ISO strings; we'll parse back to datetime before insert
                                         "COMMITMENT_TIME_START": getattr(getattr(c, "time_start", None), "isoformat", lambda: "")() if getattr(c, "time_start", None) else "",
                                         "COMMITMENT_TIME_END":   getattr(getattr(c, "time_end", None), "isoformat",   lambda: "")() if getattr(c, "time_end", None)   else "",
-                                        "COMMITMENT_QUANTITY":               getattr(c, "quantity", ""),
-                                        "COMMITMENT_AVAILABLE_AMT":          getattr(c, "available_amount", ""),
-                                        "COMMITMENT_LINE_NET_AMT":           getattr(c, "line_net_amount", ""),
-                                        "COMMITMENT_FA_VALUE":               getattr(c, "funded_allocation_value", "")
+                                        "COMMITMENT_QUANTITY":        getattr(c, "quantity", ""),
+                                        "COMMITMENT_AVAILABLE_AMT":   getattr(c, "available_amount", ""),
+                                        "COMMITMENT_LINE_NET_AMT":    getattr(c, "line_net_amount", ""),
+                                        "COMMITMENT_FA_VALUE":        getattr(c, "funded_allocation_value", "")
                                     })
 
             except Exception as e:
@@ -283,20 +299,15 @@ def upload_commitments_to_oracle(comm_csv_path, table_name=oci_commitments_table
 
         with open(comm_csv_path, newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
-            cols = reader.fieldnames  # should match comm_fields above exactly
+            cols = reader.fieldnames
 
-            # Convert timestamp strings to datetime objects for TIMESTAMP(6) columns
             def to_dt(val):
                 if not val:
                     return None
-                # Handles "YYYY-MM-DDTHH:MM:SS[.ffffff][+TZ]" — we ignore timezone if present.
                 try:
-                    # Prefer fromisoformat; strip timezone if necessary (Oracle TIMESTAMP(6) is naive)
-                    # Split off timezone part if present
                     base = val.split("+")[0].split("Z")[0]
                     return datetime.fromisoformat(base)
                 except Exception:
-                    # Fallback: try a couple of common masks
                     for mask in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
                         try:
                             return datetime.strptime(val, mask)
@@ -307,7 +318,7 @@ def upload_commitments_to_oracle(comm_csv_path, table_name=oci_commitments_table
 
             rows = []
             for row in reader:
-                row = dict(row)  # copy
+                row = dict(row)
                 row["COMMITMENT_TIME_START"] = to_dt(row.get("COMMITMENT_TIME_START", ""))
                 row["COMMITMENT_TIME_END"]   = to_dt(row.get("COMMITMENT_TIME_END", ""))
                 rows.append(tuple(row[c] for c in cols))
@@ -339,15 +350,12 @@ if __name__ == "__main__":
     logging.info(f"Found {len(sub_ids)} subscriptions.")
     csv_subs, csv_comm = list_all_subscriptions(sub_ids)
 
-    # Load main (existing) table
     if csv_subs:
         upload_csv_to_oracle(csv_subs, table_name=oci_subscriptions_table)
 
-    # Load new commitments child table
     if csv_comm:
         upload_commitments_to_oracle(csv_comm, table_name=oci_commitments_table)
 
-    # Call your procedures
     try:
         os.environ['TNS_ADMIN'] = wallet_path
         db_password = get_secret_value(config["db_credentials"]["pass_secret_ocid"], signer) \
